@@ -21,16 +21,23 @@ def get_files(dir):
                     if(meta is None):
                         print "None"
                     else:
-                        title = meta['title']
-                        artist = meta['artist']
-                        album = meta['album']
+                        #print meta.keys()
+                        title = meta['title'][0].encode('ascii', errors='ignore')
+                        artist = meta['artist'][0].encode('ascii', errors='ignore')
+                        album = meta['album'][0].encode('ascii', errors='ignore')
+                        try:
+                            year = meta['date'][0].encode('ascii', errors='ignore')
+                        except KeyError:
+                            year = 0
 
-                    #if(meta['title'])
+                        query = """ INSERT INTO files VALUES ("%s", "%s", "%s", "%s", "%s", %s);""" % (path, file, title, artist, album, year)
+                        print query
+                        db.execute(query)
 
-                    #db.execute(''' INSERT INTO files
-                    #               VALUES (%s, %s, %s, %s, %s, %s)'''
-                    #               % (path, file, title, artist, album,))
+        db.commit()
     return r
 
 #print
 get_files("/Users/cliffmartin/digilib/digilib")
+
+db.close()
