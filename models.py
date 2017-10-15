@@ -4,7 +4,6 @@ import os
 
 
 class SongFile(object):
-    unique_keys_encountered = set()
     attrs = ['tracknumber', 'title', 'artist', 'album', 'date']
     converters = {
         'tracknumber': int,
@@ -52,10 +51,6 @@ class SongFile(object):
         #             value=raw_value,
         #             path=file_path
         #         ))
-
-        self.unique_keys_encountered.add(
-            ','.join(sorted(metadata.keys()))
-        )
 
     def __str__(self):
         return '"{track_number}. {title} ({length})" by {artist}' \

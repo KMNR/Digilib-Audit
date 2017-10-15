@@ -38,9 +38,6 @@ def build_db(directory):
 
     songs = load_songs_from_directory(directory=directory)
 
-    for k in sorted(models.SongFile.unique_keys_encountered):
-        print(k)
-
 
 if __name__ == '__main__':
     import sys
