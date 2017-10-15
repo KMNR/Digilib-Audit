@@ -46,12 +46,13 @@ def build_db(dir):
 
     for directory, subdirectories, files in os.walk(dir):
         for file in files:
-            if file.endswith(valid_extensions):
+            if file.lower().endswith(valid_extensions):
                 path = os.path.join(directory, file)
 
                 try:
                     meta = mutagen.File(path, easy=True)
                 except:
+                    open('problems.txt', 'a').write('{}\n'.format(path))
                     print("Problem parsing file '{}'".format(path))
                     continue
 
