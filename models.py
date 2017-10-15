@@ -1,9 +1,13 @@
 import datetime
 import mutagen
 import os
+import soundfile
 
 
 class SongFile(object):
+    metadata_filetype = ('.mp3', '.flac', '.m4a', '.wma')
+    filename_scraping_filetypes = ('.wav')
+
     attrs = ['tracknumber', 'title', 'artist', 'album', 'date']
     converters = {
         'tracknumber': int,
@@ -15,7 +19,15 @@ class SongFile(object):
         self.filename = os.path.basename(file_path)
 
         # Extract the song's metadata from the music file
-        metadata = mutagen.File(file_path, easy=True)
+        if file_path.lower()\
+                    .endswith(SongFile.metadata_filetype):
+            self._initialize_from_mutagen()
+
+        else:
+            self._initialize_from_filename()
+
+    def _initialize_from_mutagen(self):
+        metadata = mutagen.File(self.path, easy=True)
         self.title = metadata.get('title', [None])[0]
         self.artist = metadata.get('artist', [None])[0]
         self.album = metadata.get('album', [None])[0]
@@ -54,11 +66,39 @@ class SongFile(object):
 
     def __str__(self):
         return '"{track_number}. {title} ({length})" by {artist}' \
-               ' off of the album "{album}" ({year})'.format(
+               ' off of the album "{album}" ({year}) -- {path}'.format(
             track_number=self.tracknumber,
             title=self.title,
             length=self.length,
             artist=self.artist,
             album=self.album,
             year=self.date,
+            path=self.path
         )
+
+    def _initialize_from_filename(self):
+        filename, extension = os.path.splitext(self.filename)
+
+        # Assume the filename is of the format XX TRACKTITLE.ext,
+        #  where XX is the track number, TRACKTITLE is the track title,
+        #  and ext is the file's extension.
+        split_by_spaces = filename.split(' ')
+        trackno_string = split_by_spaces[0]
+        self.tracknumber = int(trackno_string)
+        self.title = ' '.join(split_by_spaces[1:])
+
+        # Assume the name of the directory containing this file contains the
+        # song's album name and artist in the following format:
+        #  ARTIST/ALBUM
+        directory = os.path.dirname(self.path)
+        self.album = os.path.basename(directory)
+        parent_directory = os.path.dirname(directory)
+        self.artist = os.path.basename(parent_directory)
+
+        # Extract the song's duration from the file
+        # Based on this post: https://stackoverflow.com/a/41617943/412495
+        sound_file = soundfile.SoundFile(self.path)
+        sample_count = len(sound_file)
+        sample_rate = sound_file.samplerate
+        duration_in_seconds = int(sample_count / sample_rate)
+        self.length = datetime.timedelta(seconds=duration_in_seconds)

@@ -1,7 +1,7 @@
 import os
-import db
-import mutagen
+import traceback
 
+import db
 import models
 
 valid_extensions = ('.flac', '.mp3', '.aac', '.ac3', '.dts', '.wav')
@@ -20,6 +20,7 @@ def load_songs_from_directory(directory):
 
                 except ValueError as e:
                     open('problems.txt', 'a').write('{}\n'.format(path))
+                    traceback.print_exc()
                     print(e)
                     continue
 

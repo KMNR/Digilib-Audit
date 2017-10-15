@@ -1,1 +1,2 @@
 mutagen==1.38
+PySoundFile==0.9.0.post1
