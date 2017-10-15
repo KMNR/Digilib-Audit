@@ -1,3 +1,4 @@
+import datetime
 import mutagen
 import os
 
@@ -20,6 +21,9 @@ class SongFile(object):
         self.artist = metadata.get('artist', [None])[0]
         self.album = metadata.get('album', [None])[0]
         self.date = int(metadata.get('date', [None])[0])
+
+        duration_in_seconds = int(metadata.info.length)
+        self.length = datetime.timedelta(seconds=duration_in_seconds)
 
         # Track number could be a simple number, or XX/NN, where XX is the
         # track number and NN is the total number of tracks.
@@ -54,10 +58,11 @@ class SongFile(object):
         )
 
     def __str__(self):
-        return '"{track_number}. {title}" by {artist}' \
+        return '"{track_number}. {title} ({length})" by {artist}' \
                ' off of the album "{album}" ({year})'.format(
             track_number=self.tracknumber,
             title=self.title,
+            length=self.length,
             artist=self.artist,
             album=self.album,
             year=self.date,
