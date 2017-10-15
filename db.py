@@ -2,10 +2,12 @@ import sqlite3
 
 
 def create_db(db_file_path):
+    print('Initializing music database')
+
     connection = sqlite3.connect(db_file_path)
     cursor = connection.cursor()
 
-    # Create artist table
+    # Create Artist table
     cursor.execute(
         'CREATE TABLE Artist ('
         '    id INTEGER PRIMARY KEY,'
@@ -13,10 +15,10 @@ def create_db(db_file_path):
         ')'
     )
 
-    # force the database to create the previously created table
+    # Force the database to create the previously created table
     connection.commit()
 
-    # Create album table
+    # Create Album table
     cursor.execute(
         'CREATE TABLE Album ('
         '    id INTEGER,'
@@ -31,7 +33,7 @@ def create_db(db_file_path):
     )
     connection.commit()
 
-    # Create song table
+    # Create the Song table
     cursor.execute(
         'CREATE TABLE Song ('
         '    id INTEGER PRIMARY KEY,'
