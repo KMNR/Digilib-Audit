@@ -1,11 +1,47 @@
 import os
 import sqlite3
+import datetime
 
 
-class DatabaseManager(object):
+class BaseDatabaseManager(object):
     def __init__(self, db_file_path):
         self.path = db_file_path
         self.connection = sqlite3.connect(db_file_path)
+
+
+class DatabaseAPI(BaseDatabaseManager):
+    def __init__(self, db_file_path):
+        super(DatabaseAPI, self).__init__(db_file_path=db_file_path)
+
+    def get_artist_count(self):
+        cursor = self.connection.cursor()
+        count, = cursor.execute('SELECT COUNT(*) FROM Artist')\
+                       .fetchone()
+        return count
+
+    def get_album_count(self):
+        cursor = self.connection.cursor()
+        count, = cursor.execute('SELECT COUNT(*) FROM Album') \
+                       .fetchone()
+        return count
+
+    def get_song_count(self):
+        cursor = self.connection.cursor()
+        count, = cursor.execute('SELECT COUNT(*) FROM Song') \
+                       .fetchone()
+        return count
+
+    def get_library_runtime(self):
+        cursor = self.connection.cursor()
+        duration_in_seconds, = cursor.execute('SELECT SUM(duration) FROM Song')\
+                                     .fetchone()
+        duration = datetime.timedelta(seconds=duration_in_seconds)
+        return duration
+
+
+class DatabaseLoader(BaseDatabaseManager):
+    def __init__(self, db_file_path):
+        super(DatabaseLoader, self).__init__(db_file_path=db_file_path)
 
     def initialize_empty_tables(self):
         print('Initializing empty tables: ', end='')
@@ -77,9 +113,21 @@ class DatabaseManager(object):
         album_id = self.find_album_id(song, cursor, artist_id)
 
         # Finally, insert the song into the database.
-
-        print('')
-        return None
+        cursor.execute(
+            'INSERT INTO Song'
+            ' VALUES (NULL, :title, :duration, :track_number,'
+            ' :album, :path, :artist)',
+            {
+                'title': song.title,
+                'duration': song.length.total_seconds(),
+                'track_number': song.tracknumber,
+                'album': album_id,
+                'path': song.path,
+                'artist': artist_id,
+            }
+        )
+        self.connection.commit()
+        return cursor.lastrowid
 
     def find_artist_id(self, song, cursor):
         if song.artist is None:
@@ -272,6 +320,6 @@ class DatabaseManager(object):
 
 
 if __name__ == '__main__':
-    db = DatabaseManager('music.db')
+    db = DatabaseLoader('music.db')
     db.initialize_empty_tables()
 

@@ -1,13 +1,24 @@
 from flask import Flask
 from flask import render_template
 
+import config
+import db
+database = db.DatabaseAPI(config.database_filename)
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    album_count = database.get_artist_count()
+    artist_count = database.get_album_count()
+    song_count = database.get_song_count()
+    duration_of_entire_library = database.get_library_runtime()
+    return render_template('index.html',
+                           album_count=album_count,
+                           artist_count=artist_count,
+                           song_count=song_count,
+                           duration=duration_of_entire_library)
 
 
 @app.route('/hello/')
