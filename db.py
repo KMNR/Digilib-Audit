@@ -63,9 +63,48 @@ class DatabaseManager(object):
     def insert_song(self, song):
         print('Inserting new song: {}'.format(song))
 
+        # Grab a cursor to use for inserts and queries
+        cursor = self.connection.cursor()
+
         # Determine if the song's artist already exists in the Artist table.
         # If not, add a new artist.
-        # If the artist already exists in the database, query for its primary key.
+        # If the artist already exists in the database, query for its
+        # primary key.
+        if song.artist is None:
+            # The song does not have an artist name associated to it.
+            # Skip the search for artist.
+            print('{path} does not have an artist associated to it'.format(
+                song.path
+            ))
+            artist_id = None
+
+        else:
+            artist_tuples = cursor.execute(
+                'SELECT * FROM Artist WHERE name=:artist',
+                {
+                    'artist': song.artist
+                }
+            )
+            first_artist_tuple = artist_tuples.fetchone()
+            if first_artist_tuple is None:
+                # Insert the artist
+                self.insert_artist(artist_name=song.artist, cursor=cursor)
+
+                # Now extract that artist's unique ID.
+                # Here's one way to do so: simply query the database again.
+                artist_id_tuples = cursor.execute(
+                    'SELECT id FROM Artist WHERE name=:artist',
+                    {
+                        'artist': song.artist
+                    }
+                )
+                first_artist_tuple = artist_id_tuples.fetchone()
+                artist_id = first_artist_tuple[0]
+
+            else:
+                # There exists an artist with the given artist name.
+                # Capture it's primary key and save for later.
+                artist_id = first_artist_tuple[0]
 
         # Determine if the song's album already exists in the Album table.
         # If not, add a new album.
@@ -73,9 +112,21 @@ class DatabaseManager(object):
 
         # Finally, insert the song into the database.
 
-
         print('')
         return None
+
+    def insert_artist(self, artist_name, cursor):
+        # Add a new artist into the database.
+        # Notice how I am specifying the primary key here as NULL instead of
+        # a particular value. In relational algebra, this would be illegal.
+        # However, most database systems accommodate this and
+        # will auto-generating a value unique primary key upon the insertion
+        # of a new tuple.
+        cursor.execute(
+            'INSERT INTO Artist VALUES (NULL, :artist_name)',
+            {'artist_name': artist_name}
+        )
+        self.connection.commit()
 
 
 if __name__ == '__main__':
