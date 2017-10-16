@@ -9,5 +9,33 @@
         <p>{{ song_count }} songs</p>
         <p>{{ duration }} worth of music!</p>
     </article>
+
+    <article>
+        <h3>Search</h3>
+        <!-- Form with fieldset, legend, and label -->
+        <form action="{{ url_for('search_albums_by_name') }}" method="post">
+          <fieldset>
+              <legend>Album Title Search</legend>
+              <input type="text" name="album-title" id="album-title">
+              <input type="submit" value="Search">
+          </fieldset>
+        </form>
+
+        <form action="{{ url_for('search_artists_by_name') }}" method="post">
+          <fieldset>
+              <legend>Artist Name Search</legend>
+              <input type="text" name="artist-name" id="artist-name">
+              <input type="submit" value="Search">
+          </fieldset>
+        </form>
+
+        <form action="{{ url_for('search_songs_by_name') }}" method="post">
+          <fieldset>
+              <legend>Song Title Search</legend>
+              <input type="text" name="song-title" id="song-title">
+              <input type="submit" value="Search">
+          </fieldset>
+        </form>
+    </article>
 </section>
 {% endblock %}

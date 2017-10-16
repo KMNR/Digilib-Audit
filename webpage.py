@@ -96,15 +96,18 @@ def song_page(song_id=None):
 ################################################################################
 # Search by names
 #
-@app.route('/search/artist/<artist_name>/')
+@app.route('/search/artists')
 def search_artists_by_name(artist_name):
     return 'Artist %s' % artist_name
 
 
-@app.route('/search/album/<album_name>/')
+@app.route('/search/albums')
 def search_albums_by_name(album_name):
     return 'Album %d' % album_name
 
 
+@app.route('/search/songs')
+def search_songs_by_name(song_name):
+    return 'Song: %d' % song_name
 
 
