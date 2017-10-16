@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import render_template
+from flask import request
 
 import config
 import db
@@ -36,8 +37,7 @@ def artist_page(artist_id=None):
     if artist_id is None:
         artists = database.get_all_artists()
         return render_template('artists.html',
-                               artists=artists,
-                               artist_id=artist_id)
+                               artists=artists)
 
     else:
         artist = database.get_artist(id=artist_id)
@@ -47,8 +47,7 @@ def artist_page(artist_id=None):
         # To do so, we need to create a singleton list that includes the
         # single artist that we are after.
         return render_template('artists.html',
-                               artists=[artist],
-                               artist_id=artist_id)
+                               artists=[artist])
 
 
 @app.route('/album/')
@@ -96,18 +95,42 @@ def song_page(song_id=None):
 ################################################################################
 # Search by names
 #
-@app.route('/search/artists')
-def search_artists_by_name(artist_name):
-    return 'Artist %s' % artist_name
+@app.route('/search/artists', methods=['POST'])
+def search_artists_by_name():
+    artist_name = request.form['artist-name']
+    artists = database.get_artists_with_similar_name(name=artist_name)
+    return render_template('artists.html',
+                           artists=artists)
 
 
-@app.route('/search/albums')
-def search_albums_by_name(album_name):
-    return 'Album %d' % album_name
+@app.route('/search/albums', methods=['POST'])
+def search_albums_by_name():
+    album_title = request.form['album-title']
+    albums = database.get_albums_with_similar_name(title=album_title)
+
+    # Build a list of unique artist IDs
+    artist_ids = set()
+    for album in albums:
+        artist_ids.add(album['artist'])
+
+    artists = database.get_artists(ids=artist_ids)
+
+    # This is an example of a dictionary comprehension. It builds a
+    # dictionary without having to explicitly use a for-loop.
+    artist_names_dictionary = {
+        artist['id']: artist['name']
+        for artist in artists
+    }
+
+    return render_template('albums.html',
+                           albums=albums,
+                           artist_names=artist_names_dictionary)
 
 
-@app.route('/search/songs')
-def search_songs_by_name(song_name):
-    return 'Song: %d' % song_name
-
+@app.route('/search/songs', methods=['POST'])
+def search_songs_by_name():
+    song_title = request.form['song-title']
+    songs = database.get_songs_with_similar_name(title=song_title)
+    return render_template('songs.html',
+                           songs=songs)
 

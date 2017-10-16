@@ -60,6 +60,44 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return artist
 
+    def get_artists_with_similar_name(self, name):
+        cursor = self.connection.cursor()
+        # The WHERE attribute LIKE '%...%' syntax allows you to make
+        # search queries on partially-matching attribute values.
+        # e.g.
+        #    SELECT * FROM Artist WHERE name LIKE '%Snarky%'
+        #
+        # This query would return the artist "Snarky Puppy" if it exists in
+        # the database.
+        matching_artists = cursor.execute(
+            'SELECT * FROM Artist'
+            ' WHERE name LIKE :name',
+            {'name': '%{}%'.format(name)}
+        ).fetchall()
+        cursor.close()
+        return matching_artists
+
+    def get_artists(self, ids):
+        cursor = self.connection.cursor()
+
+        # Grab all artists that have an ID contained in the IDs collection.
+        # The collection needs to be converted into a comma-delimited string,
+        #  which is accomplished as follows:
+
+        # First, convert the collection of integers into a collection of strings
+        id_strings = [str(id) for id in ids]
+
+        # Then, join all strings in the collection by a comma
+        joined_ids = ','.join(id_strings)
+
+        artists = cursor.execute(
+            'SELECT * FROM Artist WHERE id IN (:ids)',
+            joined_ids
+        ).fetchall()
+
+        cursor.close()
+        return artists
+
     def get_all_albums(self):
         cursor = self.connection.cursor()
         albums = cursor.execute('SELECT * FROM Album').fetchall()
@@ -73,6 +111,16 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return album
 
+    def get_albums_with_similar_name(self, title):
+        cursor = self.connection.cursor()
+        matching_albums = cursor.execute(
+            'SELECT * FROM Album'
+            ' WHERE title LIKE :title',
+            {'title': '%{}%'.format(title)}
+        ).fetchall()
+        cursor.close()
+        return matching_albums
+
     def get_all_songs(self):
         cursor = self.connection.cursor()
         songs = cursor.execute('SELECT * FROM Song').fetchall()
@@ -85,6 +133,16 @@ class DatabaseAPI(BaseDatabaseManager):
                               {'id': id}).fetchone()
         cursor.close()
         return song
+
+    def get_songs_with_similar_name(self, title):
+        cursor = self.connection.cursor()
+        matching_songs = cursor.execute(
+            'SELECT * FROM Song'
+            ' WHERE title LIKE :title',
+            {'title': '%{}%'.format(title)}
+        ).fetchall()
+        cursor.close()
+        return matching_songs
 
 
 class DatabaseLoader(BaseDatabaseManager):
