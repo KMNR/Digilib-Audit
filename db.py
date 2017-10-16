@@ -31,7 +31,7 @@ class DatabaseManager(object):
             '    id INTEGER PRIMARY KEY,'
             '    title VARCHAR(120) NOT NULL,'
             '    year INTEGER,'     # The year attribute is allowed to be null.
-            '    filesystem_path VARCHAR(500),'
+            '    filesystem_path VARCHAR(500) UNIQUE,'
             '    artist INTEGER NOT NULL,'
             '    FOREIGN KEY(artist) REFERENCES Artist(id)'
             ')'
@@ -47,7 +47,7 @@ class DatabaseManager(object):
             '    duration INTEGER,'
             '    track_number INTEGER,'
             '    album INTEGER,'
-            '    filesystem_path VARCHAR(500) NOT NULL,'
+            '    filesystem_path VARCHAR(500) NOT NULL UNIQUE,'
             '    artist INTEGER,'
             '    FOREIGN KEY(album) REFERENCES Album(id),'
             '    FOREIGN KEY(artist) REFERENCES Artist(id)'
