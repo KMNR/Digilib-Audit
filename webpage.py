@@ -56,6 +56,7 @@ def album_page(album_id=None):
     if album_id is None:
         albums = database.get_all_albums()
         artists = database.get_all_artists()
+        songs = database.get_all_songs()
 
         # This is an example of a dictionary comprehension. It builds a
         # dictionary without having to explicitly use a for-loop.
@@ -64,9 +65,35 @@ def album_page(album_id=None):
             for artist in artists
         }
 
+        # Build a dictionary of songs associated to each album.
+        # First, initialize the dictionary with the album IDs and an empty list.
+        songs_by_album_id = {
+            album['id']: list()
+            for album in albums
+        }
+
+        # Once there's an empty list associated for each album, each list can
+        # be populated with songs corresponding to each album.
+        for song in songs:
+
+            # Some songs do not have an associated album due to poor tags on
+            # the sourced music. Skip over these songs.
+            if song['album'] is None:
+                continue
+
+            album_id = song['album']
+            app.logger.debug('Album id: {}'.format(album_id))
+            current_song_list = songs_by_album_id[album_id]
+            current_song_list.append(song)
+
+        # Then it's a good idea to sort each album list by their track numbers.
+        for album_id in songs_by_album_id:
+            songs_by_album_id[album_id].sort(key=lambda s: s['track_number'])
+
         return render_template('albums.html',
                                albums=albums,
                                artist_names=artist_names_dictionary,
+                               songs_by_album=songs_by_album_id,
                                album_id=album_id)
 
     else:

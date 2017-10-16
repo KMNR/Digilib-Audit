@@ -11,6 +11,16 @@
                 {{ artist_names[single_album.artist] }}</a>
             ({{ single_album.year }})
         </h4>
+
+        <ol>
+            {% set songs_from_album = songs_by_album[single_album.id] %}
+            {% for track in songs_from_album %}
+                <li>
+                    {{ track.title }} ({{ track.duration }})
+                </li>
+            {% endfor %}
+        </ol>
+
         <p>Article content.... lorem ipsum si imet delor</p>
     </article>
     {% endfor %}
