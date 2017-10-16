@@ -50,9 +50,15 @@ def build_db(directory):
     if not os.path.isdir(directory):
         raise IOError('"{}" is not a directory'.format(directory))
 
-    # db.create_db(db_file_path=database_filename)
+    database = db.DatabaseManager(db_file_path=database_filename)
+    database.initialize_empty_tables()
 
+    # Walk through the given directory and find song files.
     songs = load_songs_from_directory(directory=directory)
+
+    # Save the found song data to the database.
+    for song in songs:
+        database.insert_song(song)
 
 
 if __name__ == '__main__':
