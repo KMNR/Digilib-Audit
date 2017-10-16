@@ -19,9 +19,11 @@ def load_songs_from_directory(directory):
                     song = models.SongFile(file_path=path)
 
                 except ValueError as e:
-                    open('problems.txt', 'a').write('{}\n'.format(path))
-                    traceback.print_exc()
-                    print(e)
+                    log_error(e, path)
+                    continue
+
+                except OSError as e:
+                    log_error(e, path)
                     continue
 
                 else:
@@ -31,16 +33,22 @@ def load_songs_from_directory(directory):
     return songs
 
 
+def log_error(e, path):
+    open('problems.txt', 'a').write('{}\n'.format(path))
+    traceback.print_exc()
+    print(e)
+    
+
+
 def build_db(directory):
     if not os.path.isdir(directory):
         raise IOError('"{}" is not a directory'.format(directory))
 
-    db.create_db(db_file_path=database_filename)
+    #db.create_db(db_file_path=database_filename)
 
     songs = load_songs_from_directory(directory=directory)
 
 
 if __name__ == '__main__':
     import sys
-    #build_db(sys.argv[-1])
-    build_db('/home/kp/Music/deadmau5')
+    build_db(sys.argv[-1])
