@@ -16,7 +16,7 @@
             {% set songs_from_album = songs_by_album[single_album.id] %}
             {% for track in songs_from_album %}
                 <li>
-                    {{ track.title }} ({{ track.duration }})
+                    {{ track.title }} ({{ track.duration|duration }})
                 </li>
             {% endfor %}
         </ol>

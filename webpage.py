@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -161,3 +163,8 @@ def search_songs_by_name():
     return render_template('songs.html',
                            songs=songs)
 
+
+@app.template_filter('duration')
+def _jinja2_filter_duration(seconds):
+    duration = datetime.timedelta(seconds=seconds)
+    return duration
