@@ -2,9 +2,17 @@
 {% block content %}
 <section>
     <h2>Albums</h2>
+    {% for single_album in albums %}
     <article>
-        <h3>Article Heading</h3>
+        <h3>{{ single_album.title }}</h3>
+        <h4>by
+            <a href="{{ url_for('artist_page',
+                                artist_id=single_album.artist) }}">
+                {{ artist_names[single_album.artist] }}</a>
+            ({{ single_album.year }})
+        </h4>
         <p>Article content.... lorem ipsum si imet delor</p>
     </article>
+    {% endfor %}
 </section>
 {% endblock %}

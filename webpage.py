@@ -54,15 +54,43 @@ def artist_page(artist_id=None):
 @app.route('/album/')
 @app.route('/album/<int:album_id>')
 def album_page(album_id=None):
-    return render_template('albums.html',
-                           album_id=album_id)
+    if album_id is None:
+        albums = database.get_all_albums()
+        artists = database.get_all_artists()
+
+        # This is an example of a dictionary comprehension. It builds a
+        # dictionary without having to explicitly use a for-loop.
+        artist_names_dictionary = {
+            artist['id']: artist['name']
+            for artist in artists
+        }
+
+        return render_template('albums.html',
+                               albums=albums,
+                               artist_names=artist_names_dictionary,
+                               album_id=album_id)
+
+    else:
+        album = database.get_album(id=album_id)
+        artist = database.get_artist(id=album['artist'])
+        return render_template('albums.html',
+                               albums=[album],
+                               artist_names={artist['id']: artist['name']},
+                               album_id=album_id)
 
 
 @app.route('/song/')
 @app.route('/song/<int:song_id>')
 def song_page(song_id=None):
-    return render_template('songs.html',
-                           song_id=song_id)
+    if song_id is None:
+        songs = database.get_all_songs()
+        return render_template('songs.html',
+                               songs=songs)
+
+    else:
+        song = database.get_song(id=song_id)
+        return render_template('songs.html',
+                               songs=[song])
 
 
 ################################################################################

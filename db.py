@@ -60,6 +60,32 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return artist
 
+    def get_all_albums(self):
+        cursor = self.connection.cursor()
+        albums = cursor.execute('SELECT * FROM Album').fetchall()
+        cursor.close()
+        return albums
+
+    def get_album(self, id):
+        cursor = self.connection.cursor()
+        album = cursor.execute('SELECT * FROM Album WHERE id=:id',
+                               {'id': id}).fetchone()
+        cursor.close()
+        return album
+
+    def get_all_songs(self):
+        cursor = self.connection.cursor()
+        songs = cursor.execute('SELECT * FROM Song').fetchall()
+        cursor.close()
+        return songs
+
+    def get_song(self, id):
+        cursor = self.connection.cursor()
+        song = cursor.execute('SELECT * FROM Song WHERE id=:id',
+                              {'id': id}).fetchone()
+        cursor.close()
+        return song
+
 
 class DatabaseLoader(BaseDatabaseManager):
     def __init__(self, db_file_path):
