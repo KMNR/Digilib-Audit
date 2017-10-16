@@ -2,9 +2,11 @@
 {% block content %}
 <section>
     <h2>Artists</h2>
+    {% for single_artist in artists %}
     <article>
-        <h3>Article Heading</h3>
+        <h3>{{ single_artist.name }}</h3>
         <p>Article content.... lorem ipsum si imet delor</p>
     </article>
+    {% endfor %}
 </section>
 {% endblock %}

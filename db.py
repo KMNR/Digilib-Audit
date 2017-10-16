@@ -13,30 +13,52 @@ class DatabaseAPI(BaseDatabaseManager):
     def __init__(self, db_file_path):
         super(DatabaseAPI, self).__init__(db_file_path=db_file_path)
 
+        # Instead of accessing attribute values using indices on a tuple,
+        # let's instead setup the connection so that we can access attribute
+        # values by their name.
+        self.connection.row_factory = sqlite3.Row
+
     def get_artist_count(self):
         cursor = self.connection.cursor()
         count, = cursor.execute('SELECT COUNT(*) FROM Artist')\
                        .fetchone()
+        cursor.close()
         return count
 
     def get_album_count(self):
         cursor = self.connection.cursor()
         count, = cursor.execute('SELECT COUNT(*) FROM Album') \
                        .fetchone()
+        cursor.close()
         return count
 
     def get_song_count(self):
         cursor = self.connection.cursor()
         count, = cursor.execute('SELECT COUNT(*) FROM Song') \
                        .fetchone()
+        cursor.close()
         return count
 
     def get_library_runtime(self):
         cursor = self.connection.cursor()
         duration_in_seconds, = cursor.execute('SELECT SUM(duration) FROM Song')\
                                      .fetchone()
+        cursor.close()
         duration = datetime.timedelta(seconds=duration_in_seconds)
         return duration
+
+    def get_all_artists(self):
+        cursor = self.connection.cursor()
+        artists = cursor.execute('SELECT * FROM Artist').fetchall()
+        cursor.close()
+        return artists
+
+    def get_artist(self, id):
+        cursor = self.connection.cursor()
+        artist = cursor.execute('SELECT * FROM Artist WHERE id=:id',
+                                {'id': id}).fetchone()
+        cursor.close()
+        return artist
 
 
 class DatabaseLoader(BaseDatabaseManager):

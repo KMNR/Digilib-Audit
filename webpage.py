@@ -33,8 +33,22 @@ def hello(name=None):
 @app.route('/artist/')
 @app.route('/artist/<int:artist_id>')
 def artist_page(artist_id=None):
-    return render_template('artists.html',
-                           artist_id=artist_id)
+    if artist_id is None:
+        artists = database.get_all_artists()
+        return render_template('artists.html',
+                               artists=artists,
+                               artist_id=artist_id)
+
+    else:
+        artist = database.get_artist(id=artist_id)
+
+        # Instead of creating a separate page for displaying one artist vs
+        # displaying a bunch of artists, let's just use the same page.
+        # To do so, we need to create a singleton list that includes the
+        # single artist that we are after.
+        return render_template('artists.html',
+                               artists=[artist],
+                               artist_id=artist_id)
 
 
 @app.route('/album/')
