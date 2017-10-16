@@ -144,6 +144,20 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return matching_songs
 
+    def get_albums_by_artists(self, artist_ids):
+        cursor = self.connection.cursor()
+
+        albums = []
+        for id in artist_ids:
+            albums_by_artist = cursor.execute(
+                'SELECT * FROM Album WHERE artist=:id',
+                {'id': id}
+            )
+            albums.extend(albums_by_artist.fetchall())
+
+        cursor.close()
+        return albums
+
 
 class DatabaseLoader(BaseDatabaseManager):
     def __init__(self, db_file_path):

@@ -5,11 +5,16 @@
         <h2>No Artists Found</h2>
     {% else %}
         {% for single_artist in artists %}
+            {% set albums_by_artist = albums_per_artist[single_artist.id] %}
+
             <h2>{{ single_artist.name }}</h2>
-            <article>
-                <h3>Album name</h3>
-                <p>Article content.... lorem ipsum si imet delor</p>
-            </article>
+            {% for album in albums_by_artist %}
+                <article>
+                    <h3>{{ album.title }} ({{ album.year }})</h3>
+                    <p>Article content.... lorem ipsum si imet delor</p>
+                </article>
+            {% endfor %}
+
         {% endfor %}
     {% endif %}
 

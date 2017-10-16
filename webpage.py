@@ -38,8 +38,26 @@ def hello(name=None):
 def artist_page(artist_id=None):
     if artist_id is None:
         artists = database.get_all_artists()
+
+        # Load the albums IDs of the albums created by this artist.
+        # What follows is an example of a list comprehension in Python.
+        # It builds a list without the need for a for-loop.
+        artist_ids = set([artist['id'] for artist in artists])
+
+        albums = database.get_albums_by_artists(artist_ids=artist_ids)
+        albums_by_artist = {
+            artist['id']: list() for artist in artists
+        }
+        for album in albums:
+            albums_by_artist[album['artist']].append(album)
+
+        # Sort albums by year in descending order.
+        for album_collection in albums_by_artist.values():
+            album_collection.sort(key=lambda a: a['year'], reverse=True)
+
         return render_template('artists.html',
-                               artists=artists)
+                               artists=artists,
+                               albums_per_artist=albums_by_artist)
 
     else:
         artist = database.get_artist(id=artist_id)
