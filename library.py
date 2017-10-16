@@ -50,7 +50,7 @@ def build_db(directory):
     if not os.path.isdir(directory):
         raise IOError('"{}" is not a directory'.format(directory))
 
-    db.create_db(db_file_path=database_filename)
+    # db.create_db(db_file_path=database_filename)
 
     songs = load_songs_from_directory(directory=directory)
 

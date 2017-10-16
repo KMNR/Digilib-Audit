@@ -2,12 +2,21 @@ import datetime
 import mutagen
 import os
 import soundfile
+import dateutil.parser
 
 
 class SongFile(object):
     def __init__(self, file_path):
         self.path = file_path
         self.filename = os.path.basename(file_path)
+
+        self.tracknumber = None
+        self.title = None
+        self.length = None
+        self.artist = None
+        self.album = None
+        self.release_date = None
+        self.year = None
 
     def __str__(self):
         return '"{track_number}. {title} ({length})" by {artist}' \
@@ -17,7 +26,7 @@ class SongFile(object):
             length=self.length,
             artist=self.artist,
             album=self.album,
-            year=self.date,
+            year=self.year,
             path=self.path
         )
 
@@ -30,7 +39,11 @@ class MutagenCompatibleSongFile(SongFile):
         self.title = metadata.get('title', [None])[0]
         self.artist = metadata.get('artist', [None])[0]
         self.album = metadata.get('album', [None])[0]
-        self.date = int(metadata.get('date', [None])[0])
+
+        if 'date' in metadata:
+            date_string = metadata['date'][0]
+            self.release_date = dateutil.parser.parse(date_string)
+            self.year = int(self.release_date.year)
 
         duration_in_seconds = int(metadata.info.length)
         self.length = datetime.timedelta(seconds=duration_in_seconds)
