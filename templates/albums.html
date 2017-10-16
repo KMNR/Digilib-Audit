@@ -14,14 +14,20 @@
 
         <ol>
             {% set songs_from_album = songs_by_album[single_album.id] %}
+            {% set song_durations = [] %}
             {% for track in songs_from_album %}
                 <li>
                     {{ track.title }} ({{ track.duration|duration }})
                 </li>
+                {# The following is an ugly hack to accomplish the updating of a
+                   variable inside of a jinja2 loop. See here:
+                   https://stackoverflow.com/a/22233462/412495 #}
+                {% if song_durations.append(track.duration) %}{% endif %}
             {% endfor %}
         </ol>
 
-        <p>Article content.... lorem ipsum si imet delor</p>
+        {{ index }}
+        <p>Album duration: {{ song_durations | sum | duration }}</p>
     </article>
     {% endfor %}
 </section>

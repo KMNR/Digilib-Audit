@@ -164,6 +164,11 @@ def search_songs_by_name():
                            songs=songs)
 
 
+# This is a filter used in the HTML template to convert an integer,
+# representing seconds, into a timedelta object. This conversion permits the
+# displaying of a song's duration as, for example, 0:03:24.
+# You'll see it used in the templates as something like
+#    {{ track.duration | duration }}
 @app.template_filter('duration')
 def _jinja2_filter_duration(seconds):
     duration = datetime.timedelta(seconds=seconds)
