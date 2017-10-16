@@ -144,13 +144,18 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return matching_songs
 
-    def get_albums_by_artists(self, artist_ids):
+    def get_albums_by_artists(self, artists):
         cursor = self.connection.cursor()
+
+        # What follows is an example of a list comprehension in Python.
+        # It builds a list without the need for a for-loop.
+        artist_ids = set([artist['id'] for artist in artists])
 
         albums = []
         for id in artist_ids:
+            # Order the results of the query in descending order by year
             albums_by_artist = cursor.execute(
-                'SELECT * FROM Album WHERE artist=:id',
+                'SELECT * FROM Album WHERE artist=:id ORDER BY year DESC',
                 {'id': id}
             )
             albums.extend(albums_by_artist.fetchall())

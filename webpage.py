@@ -38,22 +38,13 @@ def hello(name=None):
 def artist_page(artist_id=None):
     if artist_id is None:
         artists = database.get_all_artists()
+        albums = database.get_albums_by_artists(artists=artists)
 
-        # Load the albums IDs of the albums created by this artist.
-        # What follows is an example of a list comprehension in Python.
-        # It builds a list without the need for a for-loop.
-        artist_ids = set([artist['id'] for artist in artists])
-
-        albums = database.get_albums_by_artists(artist_ids=artist_ids)
         albums_by_artist = {
             artist['id']: list() for artist in artists
         }
         for album in albums:
             albums_by_artist[album['artist']].append(album)
-
-        # Sort albums by year in descending order.
-        for album_collection in albums_by_artist.values():
-            album_collection.sort(key=lambda a: a['year'], reverse=True)
 
         return render_template('artists.html',
                                artists=artists,
@@ -62,12 +53,19 @@ def artist_page(artist_id=None):
     else:
         artist = database.get_artist(id=artist_id)
 
+        # Load the albums created by this artist.
+        albums = database.get_albums_by_artists(artists=[artist])
+        albums_by_artist = {
+            artist['id']: albums
+        }
+
         # Instead of creating a separate page for displaying one artist vs
         # displaying a bunch of artists, let's just use the same page.
         # To do so, we need to create a singleton list that includes the
         # single artist that we are after.
         return render_template('artists.html',
-                               artists=[artist])
+                               artists=[artist],
+                               albums_per_artist=albums_by_artist)
 
 
 @app.route('/album/')
@@ -146,8 +144,18 @@ def song_page(song_id=None):
 def search_artists_by_name():
     artist_name = request.form['artist-name']
     artists = database.get_artists_with_similar_name(name=artist_name)
+    albums = database.get_albums_by_artists(artists=artists)
+
+    albums_by_artist = {
+        artist['id']: list() for artist in artists
+    }
+    for album in albums:
+        albums_by_artist[album['artist']].append(album)
+
     return render_template('artists.html',
-                           artists=artists)
+                           artists=artists,
+                           albums_per_artist=albums_by_artist,
+                           artist_query=artist_name)
 
 
 @app.route('/search/albums', methods=['POST'])
