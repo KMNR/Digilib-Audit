@@ -22,12 +22,22 @@ def hello(name=None):
 @app.route('/artist/')
 @app.route('/artist/<int:artist_id>')
 def artist_page(artist_id=None):
-    return 'Artist %s' % artist_id
+    return render_template('artists.html',
+                           artist_id=artist_id)
+
 
 @app.route('/album/')
 @app.route('/album/<int:album_id>')
 def album_page(album_id=None):
-    return 'Album %d' % album_id
+    return render_template('albums.html',
+                           album_id=album_id)
+
+
+@app.route('/song/')
+@app.route('/song/<int:song_id>')
+def song_page(song_id=None):
+    return render_template('songs.html',
+                           song_id=song_id)
 
 
 ################################################################################
