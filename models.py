@@ -99,6 +99,10 @@ class SongFile(object):
         )
 
     def _initialize_from_filename(self):
+        # Log the .wav file's file path to analyze the patterns in filenames
+        with open('wav_files.txt', 'a') as f:
+            f.write('{}\n'.format(self.path))
+
         filename, extension = os.path.splitext(self.filename)
 
         # Assume the filename is of the format XX TRACKTITLE.ext,
