@@ -5,28 +5,27 @@ import soundfile
 
 
 class SongFile(object):
-    metadata_filetype = ('.mp3', '.flac', '.m4a', '.wma')
-    filename_scraping_filetypes = ('.wav')
-
-    attrs = ['tracknumber', 'title', 'artist', 'album', 'date']
-    converters = {
-        'tracknumber': int,
-        'date': int,
-    }
-
     def __init__(self, file_path):
         self.path = file_path
         self.filename = os.path.basename(file_path)
 
-        # Extract the song's metadata from the music file
-        if file_path.lower()\
-                    .endswith(SongFile.metadata_filetype):
-            self._initialize_from_mutagen()
+    def __str__(self):
+        return '"{track_number}. {title} ({length})" by {artist}' \
+               ' off of the album "{album}" ({year}) -- {path}'.format(
+            track_number=self.tracknumber,
+            title=self.title,
+            length=self.length,
+            artist=self.artist,
+            album=self.album,
+            year=self.date,
+            path=self.path
+        )
 
-        else:
-            self._initialize_from_filename()
 
-    def _initialize_from_mutagen(self):
+class MutagenCompatibleSongFile(SongFile):
+    def __init__(self, file_path):
+        super(MutagenCompatibleSongFile, self).__init__(file_path=file_path)
+
         metadata = mutagen.File(self.path, easy=True)
         self.title = metadata.get('title', [None])[0]
         self.artist = metadata.get('artist', [None])[0]
@@ -46,37 +45,12 @@ class SongFile(object):
             else:
                 self.tracknumber = int(tracknumber_string)
 
-        # for key in self.attrs:
-        #     try:
-        #         raw_value = metadata.get(key, [None])[0]
-        #
-        #         if key in SongFile.converters:
-        #             value = SongFile.converters[key](raw_value)
-        #         else:
-        #             value = raw_value
-        #
-        #         setattr(self, key, value)
-        #     except ValueError:
-        #         raise ValueError('Problem with extracting {key}'
-        #                          ' from "{path}": value: {value}'.format(
-        #             key=key,
-        #             value=raw_value,
-        #             path=file_path
-        #         ))
 
-    def __str__(self):
-        return '"{track_number}. {title} ({length})" by {artist}' \
-               ' off of the album "{album}" ({year}) -- {path}'.format(
-            track_number=self.tracknumber,
-            title=self.title,
-            length=self.length,
-            artist=self.artist,
-            album=self.album,
-            year=self.date,
-            path=self.path
-        )
 
-    def _initialize_from_filename(self):
+class SongWavFile(SongFile):
+    def __init__(self, file_path):
+        super(SongWavFile, self).__init__(file_path=file_path)
+
         filename, extension = os.path.splitext(self.filename)
 
         # Assume the filename is of the format XX TRACKTITLE.ext,
@@ -95,10 +69,14 @@ class SongFile(object):
         parent_directory = os.path.dirname(directory)
         self.artist = os.path.basename(parent_directory)
 
+        self.length = self._extract_song_duration()
+
+    def _extract_song_duration(self):
         # Extract the song's duration from the file
         # Based on this post: https://stackoverflow.com/a/41617943/412495
         sound_file = soundfile.SoundFile(self.path)
         sample_count = len(sound_file)
         sample_rate = sound_file.samplerate
         duration_in_seconds = int(sample_count / sample_rate)
-        self.length = datetime.timedelta(seconds=duration_in_seconds)
+
+        return datetime.timedelta(seconds=duration_in_seconds)

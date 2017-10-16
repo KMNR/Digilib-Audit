@@ -4,7 +4,20 @@ import traceback
 import db
 import models
 
-valid_extensions = ('.flac', '.mp3', '.aac', '.ac3', '.dts', '.wav')
+mutagen_compliant_extensions = (
+    '.mp3',
+    '.flac',
+    '.m4a',
+    '.wma',
+)
+valid_extensions = (
+    '.flac',
+    '.mp3',
+    '.aac',
+    '.ac3',
+    '.dts',
+    '.wav',
+)
 database_filename = 'music_library.db'
 
 
@@ -14,9 +27,11 @@ def load_songs_from_directory(directory):
         for file in files:
             if file.lower().endswith(valid_extensions):
                 path = os.path.join(directory, file)
-
                 try:
-                    song = models.SongFile(file_path=path)
+                    if file.lower().endswith(mutagen_compliant_extensions):
+                        song = models.MutagenCompatibleSongFile(file_path=path)
+                    else:
+                        song = models.SongWavFile(file_path=path)
 
                 except ValueError as e:
                     open('problems.txt', 'a').write('{}\n'.format(path))
@@ -42,5 +57,4 @@ def build_db(directory):
 
 if __name__ == '__main__':
     import sys
-    #build_db(sys.argv[-1])
-    build_db('/home/kp/Music/deadmau5')
+    build_db(sys.argv[-1])
