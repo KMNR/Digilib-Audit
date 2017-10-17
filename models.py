@@ -55,14 +55,17 @@ class SongFile(object):
 
     def __str__(self):
         return '"{track_number}. {title} ({length})" by {artist}' \
-               ' off of the album "{album}" ({year}) -- {path}'.format(
+               ' off of the album "{album}" ({year}){album_artist}' \
+               ' -- {path}'.format(
             track_number=self.tracknumber,
             title=self.title,
             length=self.length,
             artist=self.artist,
             album=self.album,
             year=self.year,
-            path=self.path
+            path=self.path,
+            album_artist=' [{}]'.format(self.album_artist) \
+                         if self.album_artist else ''
         )
 
 
