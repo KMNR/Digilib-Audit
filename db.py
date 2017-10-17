@@ -475,7 +475,23 @@ class DatabaseLoader(BaseDatabaseManager):
                             album_year,
                             path
                 ))
-            raise
+                if artist_id is not None:
+                    various_artist_id = self.find_artist_id(
+                        artist_name='Various Artists',
+                        cursor=cursor
+                    )
+                    if various_artist_id is None:
+                        self.insert_artist(artist_name='Various Artists',
+                                           cursor=cursor)
+                        various_artist_id = cursor.lastrowid
+
+                    cursor.execute(
+                        'UPDATE Album'
+                        ' SET artist=:artist_foreign_key'
+                        ' WHERE path=:path',
+                        {'path': path,
+                         'artist_foreign_key': various_artist_id}
+                    )
 
         self.connection.commit()
 
