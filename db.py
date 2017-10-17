@@ -392,11 +392,13 @@ class DatabaseLoader(BaseDatabaseManager):
             #  made by the song's specified artist - multiple artists may create
             #  an album with the same title, so we want to avoid selecting
             # the wrong album. To accomplish this, we need a conditional join.
+            artist_name = song.album_artist if song.album_artist\
+                                            else song.artist
             album_tuples = cursor.execute(
                 'SELECT Album.id as album_id FROM Album'
                 ' JOIN Artist ON Album.artist=Artist.id'
                 ' WHERE Artist.name="{artist}"'
-                ' AND Album.title="{album}"'.format(artist=song.artist,
+                ' AND Album.title="{album}"'.format(artist=artist_name,
                                                     album=song.album)
             )
             # In this example, I used Python's string formatting
