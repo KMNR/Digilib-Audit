@@ -256,12 +256,14 @@ class DatabaseLoader(BaseDatabaseManager):
 
     def find_artist_id(self, song, cursor):
         if song.artist is None:
+            print(dir(song))
+
             # The song does not have an artist name associated to it.
             # Skip the search for artist and return None.
             # Later on, we'll consider a None value for the artist's primary key
             #  as meaning a song does not specify its artist.
             print('{path} does not have an artist associated to it'.format(
-                song.path
+                path=song.path
             ))
             return None
 
@@ -327,7 +329,7 @@ class DatabaseLoader(BaseDatabaseManager):
             # The song does not have an album name associated to it.
             # Skip the search for album and return None.
             print('{path} does not have an album associated to it'.format(
-                song.path
+                path=song.path
             ))
             return None
 
@@ -429,6 +431,7 @@ class DatabaseLoader(BaseDatabaseManager):
         #  parameter. If this method was called without specifying that
         #  parameter in the method signature, then its value will default to
         #  None. Optional parameters must go after all non-default parameters.
+        print('Inserting new album: {}, {}, {}, {}'.format(album_name, artist_id, path, album_year))
         cursor.execute(
             'INSERT INTO Album'
             ' VALUES (NULL, :title, :year, :path, :artist_foreign_key)',
