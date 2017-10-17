@@ -7,12 +7,13 @@ import models
 
 
 def load_songs_from_directory(directory):
-    songs = []
     for directory, subdirectories, files in os.walk(directory):
+        songs = []
         for file in files:
             if file.lower().endswith(config.valid_extensions):
                 path = os.path.join(directory, file)
                 try:
+                    print(path)
                     if file.lower()\
                            .endswith(config.mutagen_compliant_extensions):
                         song = models.MutagenCompatibleSongFile(file_path=path)
@@ -28,8 +29,7 @@ def load_songs_from_directory(directory):
                 else:
                     print(song)
                     songs.append(song)
-
-    return songs
+        yield songs
 
 
 def build_db(directory):
@@ -40,11 +40,9 @@ def build_db(directory):
     database.initialize_empty_tables()
 
     # Walk through the given directory and find song files.
-    songs = load_songs_from_directory(directory=directory)
-
-    # Save the found song data to the database.
-    for song in songs:
-        database.insert_song(song)
+    for album_songs in load_songs_from_directory(directory=directory):
+        for song in album_songs:
+            database.insert_song(song)
 
 
 if __name__ == '__main__':
