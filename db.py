@@ -341,6 +341,8 @@ class DatabaseLoader(BaseDatabaseManager):
             # pre-existing album search.
             # We'll structure our query using another approach to building
             # SQL queries: using the ? placeholder.
+            print('Finding album by title ({}) and year ({})'.format(song.album,
+                                                                     song.year))
             album_tuples = cursor.execute(
                 'SELECT COUNT(*) FROM Album'
                 ' WHERE title=? AND year=?',
@@ -432,18 +434,49 @@ class DatabaseLoader(BaseDatabaseManager):
     def insert_album(self, album_name, artist_id, path, cursor,
                      album_year=None):
         # Add a new album into the database.
-        # Notice how this method has "album_year=None". This is an optional
-        #  parameter. If this method was called without specifying that
-        #  parameter in the method signature, then its value will default to
-        #  None. Optional parameters must go after all non-default parameters.
-        cursor.execute(
-            'INSERT INTO Album'
-            ' VALUES (NULL, :title, :year, :path, :artist_foreign_key)',
-            {'title': album_name,
-             'year': album_year if album_year is not None else 'NULL',
-             'path': path,
-             'artist_foreign_key': artist_id}
-        )
+        try:
+            # Notice how this method has "album_year=None". This is an optional
+            #  parameter. If this method was called without specifying that
+            #  parameter in the method signature, then its value will default to
+            #  None. Optional parameters must go after all non-default parameters.
+            cursor.execute(
+                'INSERT INTO Album'
+                ' VALUES (NULL, :title, :year, :path, :artist_foreign_key)',
+                {'title': album_name,
+                 'year': album_year if album_year is not None else 'NULL',
+                 'path': path,
+                 'artist_foreign_key': artist_id}
+            )
+        except sqlite3.IntegrityError:
+            # An album already exists according to its path.
+            # Determine which attribute is different and update the existing
+            # album accordingly.
+            album = cursor.execute(
+                'SELECT * FROM Album WHERE path=":path"',
+                {'path': path}
+            ).fetchone()
+
+            # Unroll the album tuple into its constituent attributes
+            id, title, year, path, pre_existing_artist_id = album
+            if title != album_name:
+                print('Pre-existing album ({}) is named differently than new '
+                      'album ({}) at the same path ({})'.format(title,
+                                                                album_name,
+                                                                path))
+            if year != album_year:
+                print('Pre-existing album has a different year ({}) than new '
+                      'album ({}) at the same path ({})'.format(year,
+                                                                album_year,
+                                                                path))
+            if pre_existing_artist_id != artist_id:
+                print('Pre-existing album has a different artist ({}) than new '
+                      'album ({}) at the same path ({})'.format(
+                            pre_existing_artist_id,
+                            album_year,
+                            path
+                ))
+            raise
+
         self.connection.commit()
 
         # We can grab the primary key of this newly-inserted album like so,
