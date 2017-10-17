@@ -18,6 +18,40 @@ class SongFile(object):
         self.release_date = None
         self.year = None
 
+    def get_album_info_from_path(self):
+        filename, extension = os.path.splitext(self.filename)
+
+        underscore_seperated = ' ' not in filename and '_' in filename
+        period_after_track_number = len(filename.split('.')) > 1
+
+        if period_after_track_number:
+            # e.g. 10. Something Track.mp3
+            split = filename.split(' ')
+            split[0] = split[0].replace('.', '')
+
+        elif underscore_seperated:
+            # e.g. 10_No_Spaces.mp3
+            split = filename.split('_')
+
+        else:
+            # Assume the filename is of the format XX TRACKTITLE.ext,
+            #  where XX is the track number, TRACKTITLE is the track title,
+            #  and ext is the file's extension.
+            split = filename.split(' ')
+
+        trackno_string = split[0]
+        tracknumber = int(trackno_string)
+        title = ' '.join(split[1:])
+
+        # Assume the name of the directory containing this file contains the
+        # song's album name and artist in the following format:
+        #  ARTIST/ALBUM
+        directory = os.path.dirname(self.path)
+        album = os.path.basename(directory)
+        parent_directory = os.path.dirname(directory)
+        artist = os.path.basename(parent_directory)
+        return tracknumber, title, album, artist
+
     def __str__(self):
         return '"{track_number}. {title} ({length})" by {artist}' \
                ' off of the album "{album}" ({year}) -- {path}'.format(
@@ -36,9 +70,11 @@ class MutagenCompatibleSongFile(SongFile):
         super(MutagenCompatibleSongFile, self).__init__(file_path=file_path)
 
         metadata = mutagen.File(self.path, easy=True)
-        self.title = metadata.get('title', [None])[0]
-        self.artist = metadata.get('artist', [None])[0]
-        self.album = metadata.get('album', [None])[0]
+        tnumber, title, artist, album = self.get_album_info_from_path()
+
+        self.title = metadata.get('title', [title])[0]
+        self.artist = metadata.get('artist', [artist])[0]
+        self.album = metadata.get('album', [album])[0]
 
         if 'date' in metadata:
             date_string = metadata['date'][0]
@@ -58,29 +94,16 @@ class MutagenCompatibleSongFile(SongFile):
             else:
                 self.tracknumber = int(tracknumber_string)
 
+        else:
+            self.tracknumber = tnumber
 
 
 class SongWavFile(SongFile):
     def __init__(self, file_path):
         super(SongWavFile, self).__init__(file_path=file_path)
 
-        filename, extension = os.path.splitext(self.filename)
-
-        # Assume the filename is of the format XX TRACKTITLE.ext,
-        #  where XX is the track number, TRACKTITLE is the track title,
-        #  and ext is the file's extension.
-        split_by_spaces = filename.split(' ')
-        trackno_string = split_by_spaces[0]
-        self.tracknumber = int(trackno_string)
-        self.title = ' '.join(split_by_spaces[1:])
-
-        # Assume the name of the directory containing this file contains the
-        # song's album name and artist in the following format:
-        #  ARTIST/ALBUM
-        directory = os.path.dirname(self.path)
-        self.album = os.path.basename(directory)
-        parent_directory = os.path.dirname(directory)
-        self.artist = os.path.basename(parent_directory)
+        (self.tracknumber, self.title, 
+         self.album, self.artist) = self.get_album_info_from_path()
 
         self.length = self._extract_song_duration()
 
