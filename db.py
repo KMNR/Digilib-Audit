@@ -230,12 +230,12 @@ class DatabaseLoader(BaseDatabaseManager):
         # If not, add a new artist.
         # If the artist already exists in the database, query for its
         # primary key.
-        artist_id = self.find_artist_id(song, cursor)
+        artist_id = self.find_artist_id(song.artist, cursor)
 
         # Determine if the song's album already exists in the Album table.
         # If not, add a new album.
         # If the album already exists, query for its primary key.
-        album_id = self.find_album_id(song, cursor, artist_id)
+        album_id = self.find_album_id(song, cursor)
 
         # Finally, insert the song into the database.
         cursor.execute(
@@ -254,17 +254,12 @@ class DatabaseLoader(BaseDatabaseManager):
         self.connection.commit()
         return cursor.lastrowid
 
-    def find_artist_id(self, song, cursor):
-        if song.artist is None:
-            print(dir(song))
-
+    def find_artist_id(self, artist_name, cursor):
+        if artist_name is None:
             # The song does not have an artist name associated to it.
             # Skip the search for artist and return None.
             # Later on, we'll consider a None value for the artist's primary key
             #  as meaning a song does not specify its artist.
-            print('{path} does not have an artist associated to it'.format(
-                path=song.path
-            ))
             return None
 
         else:
@@ -273,7 +268,7 @@ class DatabaseLoader(BaseDatabaseManager):
             artist_tuples = cursor.execute(
                 'SELECT * FROM Artist WHERE name=:artist',
                 {
-                    'artist': song.artist
+                    'artist': artist_name
                 }
             )
             first_artist_tuple = artist_tuples.fetchone()
@@ -282,15 +277,17 @@ class DatabaseLoader(BaseDatabaseManager):
             # exist in the database. We'll now insert it, and grab the
             # primary key of that newly inserted artist.
             if first_artist_tuple is None:
-                # Insert the artist
-                self.insert_artist(artist_name=song.artist, cursor=cursor)
+                # Insert the artist.
+                # If there's an album artist and a song artist, also insert
+                # the album artist.
+                self.insert_artist(artist_name=artist_name, cursor=cursor)
 
                 # Now extract that artist's unique ID.
                 # Here's one way to do so: simply query the database again.
                 artist_id_tuples = cursor.execute(
                     'SELECT id FROM Artist WHERE name=:artist',
                     {
-                        'artist': song.artist
+                        'artist': artist_name
                     }
                 )
                 first_artist_tuple = artist_id_tuples.fetchone()
@@ -317,13 +314,18 @@ class DatabaseLoader(BaseDatabaseManager):
         )
         self.connection.commit()
 
-    def find_album_id(self, song, cursor, artist_id):
+    def find_album_id(self, song, cursor):
         # Get the album's path from the directory containing this song.
         album_path = os.path.dirname(song.path)
         # We could use this parameter to search for albums as it qualifies as
         #  a candidate key, but instead I'll use the following methods:
         #       1. query by album, year
         #       2. query by album, artist
+
+        if song.album_artist is not None:
+            artist_id = self.find_artist_id(song.album_artist, cursor)
+        else:
+            artist_id = self.find_artist_id(song.artist, cursor)
 
         if song.album is None:
             # The song does not have an album name associated to it.
@@ -411,6 +413,7 @@ class DatabaseLoader(BaseDatabaseManager):
                                                  artist_id=artist_id,
                                                  path=album_path,
                                                  cursor=cursor)
+                return new_album_id
 
             else:
                 # The album-artist pairing exists in the database.
@@ -431,7 +434,6 @@ class DatabaseLoader(BaseDatabaseManager):
         #  parameter. If this method was called without specifying that
         #  parameter in the method signature, then its value will default to
         #  None. Optional parameters must go after all non-default parameters.
-        print('Inserting new album: {}, {}, {}, {}'.format(album_name, artist_id, path, album_year))
         cursor.execute(
             'INSERT INTO Album'
             ' VALUES (NULL, :title, :year, :path, :artist_foreign_key)',

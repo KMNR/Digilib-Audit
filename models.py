@@ -14,6 +14,7 @@ class SongFile(object):
         self.title = None
         self.length = None
         self.artist = None
+        self.album_artist = None
         self.album = None
         self.release_date = None
         self.year = None
@@ -75,6 +76,7 @@ class MutagenCompatibleSongFile(SongFile):
         self.title = metadata.get('title', [title])[0]
         self.artist = metadata.get('artist', [artist])[0]
         self.album = metadata.get('album', [album])[0]
+        self.album_artist = metadata.get('albumartist', [None])[0]
 
         if 'date' in metadata:
             date_string = metadata['date'][0]
