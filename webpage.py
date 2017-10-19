@@ -117,10 +117,13 @@ def album_page(album_id=None):
     else:
         album = database.get_album(id=album_id)
         artist = database.get_artist(id=album['artist'])
+        songs = database.get_songs_from_album(album_id)
+        songs_for_album = {album_id: songs}
         return render_template('albums.html',
                                albums=[album],
                                artist_names={artist['id']: artist['name']},
-                               album_id=album_id)
+                               album_id=album_id,
+                               songs_by_album=songs_for_album)
 
 
 @app.route('/song/')
