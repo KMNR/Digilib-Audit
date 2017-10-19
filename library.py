@@ -37,7 +37,7 @@ def build_db(directory):
         raise IOError('"{}" is not a directory'.format(directory))
 
     database = db.DatabaseLoader(db_file_path=config.database_filename)
-    database.initialize_empty_tables()
+    #database.initialize_empty_tables()
 
     # Walk through the given directory and find song files.
     for album_songs in load_songs_from_directory(directory=directory):
