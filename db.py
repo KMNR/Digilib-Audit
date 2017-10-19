@@ -134,6 +134,14 @@ class DatabaseAPI(BaseDatabaseManager):
         cursor.close()
         return song
 
+    def get_songs_from_album(self, album_id):
+        cursor = self.connection.cursor()
+        songs = cursor.execute('SELECT * FROM Song WHERE album=:album',
+                               {'album': album_id})\
+                      .fetchall()
+        cursor.close()
+        return songs
+
     def get_songs_with_similar_name(self, title):
         cursor = self.connection.cursor()
         matching_songs = cursor.execute(
