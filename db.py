@@ -399,9 +399,10 @@ class DatabaseLoader(BaseDatabaseManager):
             album_tuples = cursor.execute(
                 'SELECT Album.id as album_id FROM Album'
                 ' JOIN Artist ON Album.artist=Artist.id'
-                ' WHERE Artist.name="{artist}"'
-                ' AND Album.title="{album}"'.format(artist=artist_name,
-                                                    album=song.album)
+                ' WHERE Artist.name=:artist'
+                ' AND Album.title=:album',
+                {'artist': artist_name,
+                 'album' : song.album}
             )
             # In this example, I used Python's string formatting
             #  functionality to construct the query. However, be careful with
@@ -452,7 +453,7 @@ class DatabaseLoader(BaseDatabaseManager):
             # Determine which attribute is different and update the existing
             # album accordingly.
             album = cursor.execute(
-                'SELECT * FROM Album WHERE path=":path"',
+                'SELECT * FROM Album WHERE filesystem_path=:path',
                 {'path': path}
             ).fetchone()
 
@@ -488,7 +489,7 @@ class DatabaseLoader(BaseDatabaseManager):
                     cursor.execute(
                         'UPDATE Album'
                         ' SET artist=:artist_foreign_key'
-                        ' WHERE path=:path',
+                        ' WHERE filesystem_path=:path',
                         {'path': path,
                          'artist_foreign_key': various_artist_id}
                     )
