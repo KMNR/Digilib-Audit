@@ -3,9 +3,14 @@ import mutagen
 import os
 import soundfile
 import dateutil.parser
+import re
 
 
 class SongFile(object):
+    filename_regex = re.compile(
+        r'(?P<number>\d+)[ \.\-_](?P<title>.+)\.[\w]{3,4}'
+    )
+
     def __init__(self, file_path):
         self.path = file_path
         self.filename = os.path.basename(file_path)
@@ -20,29 +25,46 @@ class SongFile(object):
         self.year = None
 
     def get_album_info_from_path(self):
-        filename, extension = os.path.splitext(self.filename)
-
-        underscore_seperated = ' ' not in filename and '_' in filename
-        period_after_track_number = len(filename.split('.')) > 1
-
-        if period_after_track_number:
-            # e.g. 10. Something Track.mp3
-            split = filename.split(' ')
-            split[0] = split[0].replace('.', '')
-
-        elif underscore_seperated:
-            # e.g. 10_No_Spaces.mp3
-            split = filename.split('_')
+        matches = self.filename_regex.search(self.filename)
+        if matches:
+            tracknumber = int(matches.group('number'))
+            title = matches.group('title')
 
         else:
-            # Assume the filename is of the format XX TRACKTITLE.ext,
-            #  where XX is the track number, TRACKTITLE is the track title,
-            #  and ext is the file's extension.
-            split = filename.split(' ')
+            tracknumber = None
+            title = os.path.splitext(self.filename)[0]
 
-        trackno_string = split[0]
-        tracknumber = int(trackno_string)
-        title = ' '.join(split[1:])
+        # filename, extension = os.path.splitext(self.filename)
+        #
+        # try:
+        #     tracknumber = int(filename[:2])
+        # except ValueError:
+        #     underscore_seperated = ' ' not in filename and '_' in filename
+        #     period_after_track_number = len(filename.split('.')) > 1
+        #
+        #     try:
+        #         if period_after_track_number:
+        #             # e.g. 10. Something Track.mp3
+        #             split = filename.split(' ')
+        #             split[0] = split[0].replace('.', '')
+        #
+        #         elif underscore_seperated:
+        #             # e.g. 10_No_Spaces.mp3
+        #             split = filename.split('_')
+        #
+        #         else:
+        #             # Assume the filename is of the format XX TRACKTITLE.ext,
+        #             #  where XX is the track number, TRACKTITLE is the track title,
+        #             #  and ext is the file's extension.
+        #             split = filename.split(' ')
+        #
+        #         trackno_string = split[0]
+        #         tracknumber = int(trackno_string)
+        #         title = ' '.join(split[1:])
+        #
+        #     except ValueError:
+        #         tracknumber = None
+        #         title = '.'.join(filename.split('.')[:-1])
 
         # Assume the name of the directory containing this file contains the
         # song's album name and artist in the following format:
@@ -81,9 +103,8 @@ class MutagenCompatibleSongFile(SongFile):
         self.album = metadata.get('album', [album])[0]
         self.album_artist = metadata.get('albumartist', [None])[0]
 
-        if 'date' in metadata:
-            date_string = metadata['date'][0]
-            self.release_date = dateutil.parser.parse(date_string)
+        self.release_date = self.get_release_date(metadata)
+        if self.release_date:
             self.year = int(self.release_date.year)
 
         duration_in_seconds = int(metadata.info.length)
@@ -95,13 +116,32 @@ class MutagenCompatibleSongFile(SongFile):
         if tracknumber_string:
             if '/' in tracknumber_string:
                 trackno, trackcount = tracknumber_string.split('/')
-                self.tracknumber = int(trackno)
+                if trackno:
+                    self.tracknumber = int(trackno)
+                else:
+                    self.tracknumber = tnumber
+
             else:
                 self.tracknumber = int(tracknumber_string)
 
         else:
             self.tracknumber = tnumber
 
+    def get_release_date(self, metadata):
+        if 'date' in metadata and metadata['date'][0]:
+            date_string = metadata['date'][0]
+            try:
+                release_date = dateutil.parser.parse(date_string)
+            except ValueError:
+                if '-00-00' in date_string:
+                    release_date = datetime.date(year=int(date_string[:4]))
+
+                else:
+                    release_date = datetime.datetime.strptime(
+                        date_string.split(' ')[0],
+                        '%Y-%d-%m'
+                    )
+            return release_date
 
 class SongWavFile(SongFile):
     def __init__(self, file_path):
