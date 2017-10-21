@@ -12,28 +12,13 @@ def load_songs_from_directory(directory):
         for file in files:
             if file.lower().endswith(config.valid_extensions):
                 path = os.path.join(directory, file)
-                try:
-                    print(path)
-                    if file.lower()\
-                           .endswith(config.mutagen_compliant_extensions):
-                        song = models.MutagenCompatibleSongFile(file_path=path)
-                    else:
-                        song = models.SongWavFile(file_path=path)
-
-                except ValueError as e:
-                    with open('problems.txt', 'a') as f:
-                        f.write(traceback.format_exc())
-                        f.write('{}\n'.format(e))
-                        f.write('{}\n'.format(path))
-                        f.write('-'*120 + '\n')
-
-                    traceback.print_exc()
-                    print(e)
-                    continue
-
+                print(path)
+                if file.lower()\
+                       .endswith(config.mutagen_compliant_extensions):
+                    song = models.MutagenCompatibleSongFile(file_path=path)
                 else:
-                    print(song)
-                    songs.append(song)
+                    song = models.SongWavFile(file_path=path)
+                songs.append(song)
         yield songs
 
 

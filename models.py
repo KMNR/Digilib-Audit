@@ -1,4 +1,7 @@
 import datetime
+import json
+import traceback
+
 import mutagen
 import os
 import soundfile
@@ -33,6 +36,7 @@ class SongFile(object):
         else:
             tracknumber = None
             title = os.path.splitext(self.filename)[0]
+            open('no_track_numbers.txt', 'a').write('{}\n'.format(self.path))
 
         # filename, extension = os.path.splitext(self.filename)
         #
@@ -103,9 +107,30 @@ class MutagenCompatibleSongFile(SongFile):
         self.album = metadata.get('album', [album])[0]
         self.album_artist = metadata.get('albumartist', [None])[0]
 
-        self.release_date = self.get_release_date(metadata)
-        if self.release_date:
-            self.year = int(self.release_date.year)
+        try:
+            self.release_date = self.get_release_date(metadata)
+            if self.release_date:
+                self.year = int(self.release_date.year)
+        except ValueError as e:
+            with open('problems.txt', 'a') as f:
+                f.write(traceback.format_exc())
+                f.write('{}\n'.format(e))
+                f.write('{}\n'.format(self.path))
+                f.write(json.dumps(dict(metadata), indent=4))
+                f.write('-' * 120 + '\n')
+
+            traceback.print_exc()
+            print(e)
+        except TypeError as e:
+            with open('problems.txt', 'a') as f:
+                f.write(traceback.format_exc())
+                f.write('{}\n'.format(e))
+                f.write('{}\n'.format(self.path))
+                f.write(json.dumps(dict(metadata), indent=4))
+                f.write('-' * 120 + '\n')
+
+            traceback.print_exc()
+            print(e)
 
         duration_in_seconds = int(metadata.info.length)
         self.length = datetime.timedelta(seconds=duration_in_seconds)
@@ -130,6 +155,9 @@ class MutagenCompatibleSongFile(SongFile):
     def get_release_date(self, metadata):
         if 'date' in metadata and metadata['date'][0]:
             date_string = metadata['date'][0]
+            if date_string == '0000':
+                return None
+            
             try:
                 release_date = dateutil.parser.parse(date_string)
             except ValueError:
