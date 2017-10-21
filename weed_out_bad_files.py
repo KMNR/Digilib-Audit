@@ -14,7 +14,7 @@ encountered_extensions = collections.defaultdict(int)
 with open('problem_files.txt', 'w') as f:
     for d, subdir, files in os.walk(directory):
         if d.endswith('__MACOSX'):
-            f.write('{}\n'.format(d))
+            shutil.rmtree(d)
             continue
 
         for filename in files:
