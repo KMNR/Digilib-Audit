@@ -13,3 +13,4 @@ valid_extensions = (
     '.wav',
 )
 database_filename = 'music_library.db'
+klap3_credentials = ('klap3', 'kmnr<3buttstuff')
