@@ -1,7 +1,6 @@
 import os
 import sqlite3
 import datetime
-import MySQLdb
 
 
 class BaseDatabaseManager(object):
@@ -508,13 +507,6 @@ class DatabaseLoader(BaseDatabaseManager):
         # We can grab the primary key of this newly-inserted album like so,
         # without having to execute another query.
         return cursor.lastrowid
-
-
-class KLAP3(object):
-    def __init__(self, credentials):
-        self.db = MySQLdb.connect("localhost", credentials[0], credentials[1],
-                                  "klap3")
-
 
 
 if __name__ == '__main__':

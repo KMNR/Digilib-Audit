@@ -3,7 +3,7 @@
 """
 SYNOPSIS
 
-	python audit.py [-h,--help] [-v,--verbose]
+	python perform_audit.py [-h,--help] [-v,--verbose]
 
 
 DESCRIPTION
@@ -28,9 +28,9 @@ LICENSE
 
 """
 import config
-import db
+from audit import digilib, klap3
 
-__appname__ = "digilib-audit"
+__appname__ = "audit"
 __author__ = "Doug McGeehan"
 __version__ = "0.0pre0"
 __license__ = "GNU GPLv3"
@@ -46,24 +46,53 @@ logger = logging.getLogger(__appname__)
 
 
 def main(args):
-    digilib_db = db.DatabaseAPI(db_file_path=config.database_filename)
-    klap3_db = db.KLAP3(credentials=config.klap3_credentials)
+    digilib_db = digilib.load(db_file_path=config.database_filename)
+    klap3_db = klap3.load(credentials=config.klap3_credentials)
+
+    klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
+
+    orphaned_digital_albums = []
+    ghost_digital_albums = [] # extra
+    albums_to_digitize = []
+    matching_albums = []
 
     # Iterate over each album in digilib (sqlite?)
-    # Query KLAP3 for that album using the album's name (mysql)
-    # Filter album results in several potential ways:
-    #   By artist
-    #   By year
-    #   By number of tracks
-    #   By a combination of all three
-    #   Note: there may be two copies of an album in KLAP: one for CDs and
-    #    one for Digital
+    for album in digilib_db.albums():
+        # Query KLAP3 for that album using the album's name (mysql)
+        found_album = klap3_db.find(album)
+
+        # Filter album results in several potential ways:
+        #   By artist
+        #   By year
+        #   By number of tracks
+        #   By a combination of all three
+        #   Note: there may be two copies of an album in KLAP: one for CDs and
+        #    one for Digital
+
+        if not found_album:
+            orphaned_digital_albums.append(album)
+
+        else:
+            matching_albums.append(found_album)
+            klap3_albums_hash[found_album.id].digilib_album = album
+
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that
     #  are in the digital library but not in KLAP
     # Build a list of KLAP3 albums that are not in the digital library
     # Build a list of digital albums that are in KLAP but not in the digital
     #  library
+
+    klap3_albums = sorted(klap3_albums_hash.values(),
+                          key=lambda a: a.library_code)
+    for album in klap3_albums:
+        logger.info(album.colored())
+
+    # for album in klap3_db.albums_not_in(matching_albums):
+    #     albums_to_digitize.append(album)
+    #
+    # albums_to_digitize.sort(key=lambda a: a.library_code)
+
     pass
 
 def setup_logger(args):
