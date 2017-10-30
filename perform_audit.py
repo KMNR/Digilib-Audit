@@ -51,7 +51,6 @@ def main(args):
 
     klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
-    """
     orphaned_digital_albums = []
     ghost_digital_albums = [] # extra
     albums_to_digitize = []
@@ -62,6 +61,7 @@ def main(args):
         # Query KLAP3 for that album using the album's name (mysql)
         found_album = klap3_db.find(album)
 
+    """
         # Filter album results in several potential ways:
         #   By artist
         #   By year

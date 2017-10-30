@@ -23,21 +23,13 @@ class KLAP3Artist(object):
 +---------------+--------------+------+-----+---------+----------------+
 '''
 class KLAP3Album(object):
-    def __init__(self, id, artist_id, label_id, name, letter, date_entered,
-                 missing, album_art_url, mbid, search_slug):
+    def __init__(self, id, title, library_code, artist, missing_flag):
         self.id = id
-        self.artist_id = artist_id
-        self.label_id = label_id
-        self.name = name
-        self.letter = letter
-        self.date_entered = date_entered
-        self.missing = missing
-        self.album_art_url = album_art_url
-        self.mbid = mbid
-        self.search_slug = search_slug
-
-        self.title = name
+        self.title = title
+        self.library_code = library_code
+        self.artist = artist
+        self.is_missing = bool(missing_flag)
 
     def __str__(self):
-        return 'KLAP3: {0.title} by artist {0.artist_id}'.format(self)
+        return 'KLAP3: {0.title} by {0.artist} -- {0.library_code}'.format(self)
 
