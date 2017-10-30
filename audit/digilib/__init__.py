@@ -32,7 +32,6 @@ class DigilibDatabase(object):
         """)
         for t in albums:
             digilib_album = DigilibAlbum(t)
-            logger.info(digilib_album)
             yield digilib_album
 
 

@@ -58,25 +58,33 @@ def main(args):
 
     # Iterate over each album in digilib (sqlite?)
     for album in digilib_db.albums():
+        logger.info('='*120)
+
         # Query KLAP3 for that album using the album's name (mysql)
-        found_album = klap3_db.find(album)
+        found_album_ids = klap3_db.find(album)
 
-    """
-        # Filter album results in several potential ways:
-        #   By artist
-        #   By year
-        #   By number of tracks
-        #   By a combination of all three
-        #   Note: there may be two copies of an album in KLAP: one for CDs and
-        #    one for Digital
 
-        if not found_album:
-            orphaned_digital_albums.append(album)
+        if len(found_album_ids)==1:
+            klap3_album = klap3_albums_hash[found_album_ids[0]]
+
+            matching_albums.append(klap3_album)
+            klap3_album.digilib_album = album
+
+        elif len(found_album_ids)>1:
+            klap3_album_matches = [
+                klap3_albums_hash[id] for id in found_album_ids
+            ]
+            logger.warning('Multiple KLAP3 matches for {}:'.format(album))
+            for klap3_album in klap3_album_matches:
+                logger.debug(klap3_album)
+            logger.debug('')
+
+            raise ValueError('Multiple KLAP3 matches were found for {}'.format(album))
 
         else:
-            matching_albums.append(found_album)
-            klap3_albums_hash[found_album.id].digilib_album = album
+            orphaned_digital_albums.append(album)
 
+    """
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that
     #  are in the digital library but not in KLAP

@@ -21,10 +21,17 @@ class KLAP3(object):
                    album.name, 
                    CONCAT(genre.abbreviation, artist.lib_number, album.letter),
                    artist.name,
-                   album.missing
-            FROM   album, genre, artist
+                   album.missing,
+                   search_format.short_name
+            FROM   album,
+                   genre,
+                   artist,
+                   album_format,
+                   search_format
             WHERE  artist.genre_id=genre.id
               AND  album.artist_id=artist.id
+              AND  album.id=album_format.album_id 
+              AND  album_format.format_id=search_format.id
         """)
 
         while True:
@@ -38,35 +45,26 @@ class KLAP3(object):
         cursor.close()
 
     def find(self, album):
-        logger.info('='*120)
         logger.info('Searching KLAP3 for {}'.format(album))
 
         cursor = self.db.cursor()
         
         cursor.execute("""
-            SELECT album.id as album_id,
-                   album.name as album_name, 
-                   CONCAT(genre.abbreviation, artist.lib_number, album.letter) as library_code,
-                   artist.name as artist_name,
-                   album.missing as is_missing
-             FROM album, genre, artist
-            WHERE artist.genre_id=genre.id
-              AND album.artist_id=artist.id
-              AND LOWER(album.name)=%s
-              AND LOWER(artist.name)=%s
-              
+            SELECT album.id
+              FROM album 
+              ,    artist
+             WHERE LOWER(artist.name)=%s
+               AND LOWER(album.name)=%s
+               AND album.artist_id=artist.id
         """, (
             album.title.lower(),
             album.artist.lower()
         ))
 
-        while True:
-            t = cursor.fetchone()
-            if t is None:
-                break
-
-            logger.debug(t)
+        matching_album_ids = [id for id, in cursor.fetchall()]
+        logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
 
         cursor.close()
         logger.debug('')
+        return matching_album_ids
 
