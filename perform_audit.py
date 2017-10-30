@@ -51,6 +51,7 @@ def main(args):
 
     klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
+    """
     orphaned_digital_albums = []
     ghost_digital_albums = [] # extra
     albums_to_digitize = []
@@ -94,6 +95,8 @@ def main(args):
     # albums_to_digitize.sort(key=lambda a: a.library_code)
 
     pass
+    """
+
 
 def setup_logger(args):
     logger.setLevel(logging.DEBUG)

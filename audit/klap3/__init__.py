@@ -1,6 +1,6 @@
 import MySQLdb
 import logging
-from audit import klap3
+from audit.klap3 import models
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +16,16 @@ class KLAP3(object):
     def albums(self):
         cursor = self.db.cursor()
 
-        results = cursor.execute("""
+        cursor.execute("""
             SELECT * FROM album
         """)
 
-        for t in results:
-            klap3_album = klap3.models.KLAP3Album(t)
-            logger.debug(klap3_album)
+        while True:
+            t = cursor.fetchone()
+            if t is None:
+                break
+
+            klap3_album = models.KLAP3Album(*t)
             yield klap3_album
 
         cursor.close()

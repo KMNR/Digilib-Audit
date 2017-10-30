@@ -3,6 +3,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def load(db_file_path):
+    return DigilibDatabase(db_file_path)
+
+
 class DigilibDatabase(object):
     def __init__(self, db_file_path):
         self.path = db_file_path
