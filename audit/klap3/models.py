@@ -26,7 +26,7 @@ class KLAP3Artist(object):
 '''
 class KLAP3Album(object):
     color_coding = {
-        'Exact': 'gray',
+        'Exact': 'grey',
         'Multiple Matches': 'red',
         'None': 'green'
     }
@@ -54,7 +54,8 @@ class KLAP3Album(object):
             (
                 ' {0.library_code: <10} │'
                 ' {0.title: ^60} │'
-                ' {0.artist: ^60}'
+                ' {0.artist: ^60} │'
+                ' {0.digilib_album}'
             ).format(self),
             self.color_coding[self.match_status]
         )
