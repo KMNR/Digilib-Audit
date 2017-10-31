@@ -34,6 +34,18 @@ class DigilibDatabase(object):
             digilib_album = DigilibAlbum(*t)
             yield digilib_album
 
+        cursor.close()
+
+    def album_count(self):
+        cursor = self.connection.cursor()
+
+        cursor.execute('SELECT COUNT(*) FROM Album')
+        count, = cursor.fetchone()
+
+        cursor.close()
+
+        return count
+
 
 class DigilibAlbum(object):
     def __init__(self, title, artist, track_count, year):
