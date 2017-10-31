@@ -18,12 +18,14 @@ class KLAP3(object):
         cursor = self.db.cursor()
 
         cursor.execute("""
-            SELECT album.id,
-                   album.name, 
-                   CONCAT(genre.abbreviation, artist.lib_number, album.letter),
-                   artist.name,
-                   album.missing,
-                   search_format.short_name
+            SELECT album.id
+            ,      album.name
+            ,      genre.abbreviation
+            ,      artist.lib_number
+            ,      album.letter
+            ,      artist.name
+            ,      album.missing
+            ,      search_format.short_name
             FROM   album,
                    genre,
                    artist,

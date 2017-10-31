@@ -31,10 +31,13 @@ class KLAP3Album(object):
         'None': 'green'
     }
 
-    def __init__(self, id, title, library_code, artist, missing_flag, format):
+    def __init__(self, id, title, genre_code, artist_number, album_letter,
+                 artist, missing_flag, format):
         self.id = id
         self.title = title
-        self.library_code = library_code
+        self.library_code = '{}{:0>5}{}'.format(genre_code,
+                                                artist_number,
+                                                album_letter)
         self.artist = artist
         self.is_missing = bool(missing_flag)
         self.format = format
