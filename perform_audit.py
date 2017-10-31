@@ -54,6 +54,7 @@ def main(args):
     digilib_db = digilib.load(db_file_path=config.database_filename)
     klap3_db = klap3.load(credentials=config.klap3_credentials)
 
+    # TODO: do a better solution for the key error that occurs with some albums
     klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
     orphaned_digital_albums = []
@@ -62,6 +63,7 @@ def main(args):
     matching_albums = []
 
     # Iterate over each album in digilib
+    unfound_hashmap_albums = []
     digilib_album_count = digilib_db.album_count()
     #progress = progressbar.ProgressBar(max_value=digilib_album_count)
     for i, album in enumerate(digilib_db.albums()):
@@ -71,48 +73,53 @@ def main(args):
         # Query KLAP3 for that album using the album's name (mysql)
         found_album_ids = klap3_db.find(album)
 
+        try:
+            if len(found_album_ids)==1:
+                klap3_album = klap3_albums_hash[found_album_ids[0]]
 
-        if len(found_album_ids)==1:
-            klap3_album = klap3_albums_hash[found_album_ids[0]]
+                matching_albums.append(klap3_album)
+                klap3_album.digilib_album = album
+                klap3_album.match_status = 'Exact'
 
-            matching_albums.append(klap3_album)
-            klap3_album.digilib_album = album
-            klap3_album.match_status = 'Exact'
+                logger.debug(termcolor.colored('Single match!', 'green'))
+                logger.debug(klap3_album)
+                logger.debug(album)
 
-            logger.debug(termcolor.colored('Single match!', 'green'))
-            logger.debug(klap3_album)
-            logger.debug(album)
+            elif len(found_album_ids)>1:
+                # Convert album IDs to matches
+                klap3_album_matches = [
+                    klap3_albums_hash[id] for id in found_album_ids
+                ]
 
-        elif len(found_album_ids)>1:
-            # Convert album IDs to matches
-            klap3_album_matches = [
-                klap3_albums_hash[id] for id in found_album_ids
-            ]
+                logger.warning('{} {}'.format(
+                    termcolor.colored(str(len(found_album_ids)),
+                                      'cyan',
+                                      attrs=['underline', 'bold']),
+                    termcolor.colored('KLAP3 matches for {}:'.format(album),
+                                      'cyan')
+                ))
 
-            logger.warning('{} {}'.format(
-                termcolor.colored(str(len(found_album_ids)),
-                                  'cyan', 
-                                  attrs=['underline', 'bold']),
-                termcolor.colored('KLAP3 matches for {}:'.format(album),
-                                  'cyan')
-            ))
+                with open('multiple_album_matches.txt', 'a') as f:
+                    f.write('{}\n'.format(album))
+                    for klap3_album in klap3_album_matches:
+                        logger.debug(klap3_album)
+                        klap3_album.digilib_album = album
+                        klap3_album.match_status = 'Multiple Matches'
+                        matching_albums.append(klap3_album)
 
-            with open('multiple_album_matches.txt', 'a') as f:
-                f.write('{}\n'.format(album))
-                for klap3_album in klap3_album_matches:
-                    logger.debug(klap3_album)
-                    klap3_album.digilib_album = album
-                    klap3_album.match_status = 'Multiple Matches'
-                    matching_albums.append(klap3_album)
+                        f.write('{}\n'.format(klap3_album))
 
-                    f.write('{}\n'.format(klap3_album))
+                    f.write('\n')
 
-                f.write('\n')
+            else:
+                logger.debug(termcolor.colored('No matches: {}'.format(album),
+                                               'red'))
+                orphaned_digital_albums.append(album)
 
-        else:
-            logger.debug(termcolor.colored('No matches: {}'.format(album), 
-                                           'red'))
-            orphaned_digital_albums.append(album)
+        except KeyError:
+            logger.exception("Can't find matching KLAP3 albums in hash-map:"
+                             " {}".format(album))
+            unfound_hashmap_albums.append(album)
 
         logger.debug('')
 
@@ -127,6 +134,12 @@ def main(args):
                           key=lambda a: a.library_code)
     for album in klap3_albums:
         logger.info(album.colored())
+
+    logger.warning('Unable to find {} KLAP3 albums in initial hashmap:'.format(
+        len(unfound_hashmap_albums)
+    ))
+    for album in unfound_hashmap_albums:
+        logger.warning(album)
 
     # for album in klap3_db.albums_not_in(matching_albums):
     #     albums_to_digitize.append(album)
