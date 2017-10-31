@@ -71,19 +71,19 @@ class KLAP3(object):
         matching_album_ids = [id for id, in cursor.fetchall()]
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
 
-        if len(matching_album_ids)>1:
-            logger.debug('Multiple matches found. Querying for CD/CD Singles')
-            sql = '''
-                SELECT album_format.album_id
-                  FROM album_format, search_format
-                 WHERE album_format.album_id IN (%s)
-                   AND search_format.short_name IN ('CD', 'CDS')
-                   AND album_format.format_id=search_format.id
-            ''' % ','.join(['%s'] * len(matching_album_ids))
-            cursor.execute(sql, tuple(matching_album_ids))
-
-            matching_album_ids = [id for id, in cursor.fetchall()]
-            logger.debug('{} KLAP3 CD/CDS albums found'.format(len(matching_album_ids)))
+        # if len(matching_album_ids)>1:
+        #     logger.debug('Multiple matches found. Querying for CD/CD Singles')
+        #     sql = '''
+        #         SELECT album_format.album_id
+        #           FROM album_format, search_format
+        #          WHERE album_format.album_id IN (%s)
+        #            AND search_format.short_name IN ('CD', 'CDS')
+        #            AND album_format.format_id=search_format.id
+        #     ''' % ','.join(['%s'] * len(matching_album_ids))
+        #     cursor.execute(sql, tuple(matching_album_ids))
+        #
+        #     matching_album_ids = [id for id, in cursor.fetchall()]
+        #     logger.debug('{} KLAP3 CD/CDS albums found'.format(len(matching_album_ids)))
             
         cursor.close()
         logger.debug('')
