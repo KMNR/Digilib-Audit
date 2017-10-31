@@ -1,6 +1,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import termcolor
+
 
 class KLAP3Artist(object):
     pass
@@ -23,6 +25,12 @@ class KLAP3Artist(object):
 +---------------+--------------+------+-----+---------+----------------+
 '''
 class KLAP3Album(object):
+    color_coding = {
+        'Exact': 'gray',
+        'Multiple Matches': 'red',
+        'None': 'green'
+    }
+
     def __init__(self, id, title, library_code, artist, missing_flag, format):
         self.id = id
         self.title = title
@@ -31,8 +39,19 @@ class KLAP3Album(object):
         self.is_missing = bool(missing_flag)
         self.format = format
         self.digilib_album = None
+        self.match_status = 'None'
 
 
     def __str__(self):
         return 'KLAP3: {0.title} by {0.artist} -- {0.library_code} ({0.format})'.format(self)
 
+
+    def colored(self):
+        return termcolor.colored(
+            (
+                ' {0.library_code: <10} │'
+                ' {0.title: ^30} │'
+                ' {0.artist: ^30}'
+            ).format(),
+            self.color_coding[self.match_status]
+        )

@@ -115,7 +115,6 @@ def main(args):
 
         logger.debug('')
 
-    """
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that
     #  are in the digital library but not in KLAP
@@ -133,8 +132,6 @@ def main(args):
     #
     # albums_to_digitize.sort(key=lambda a: a.library_code)
 
-    pass
-    """
 
 
 def setup_logger(args):
