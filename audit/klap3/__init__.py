@@ -1,6 +1,7 @@
 import MySQLdb
 import logging
 from audit.klap3 import models
+from unidecode import unidecode
 
 logger = logging.getLogger(__name__)
 
@@ -46,24 +47,70 @@ class KLAP3(object):
 
     def find(self, album):
         logger.info('Searching KLAP3 for {}'.format(album))
-
-        cursor = self.db.cursor()
         
+        cursor = self.db.cursor()
+        '''
         cursor.execute("""
             SELECT album.id
               FROM album 
               ,    artist
+              ,    song
              WHERE LOWER(artist.name)=%s
                AND LOWER(album.name)=%s
                AND album.artist_id=artist.id
+               AND album.id=song.album_id
+            GROUP BY song.album_id
+            HAVING COUNT(song.id)=%s
         """, (
-            album.title.lower(),
-            album.artist.lower()
+            unidecode(album.title).lower(),
+            unidecode(album.artist).lower(),
+            album.track_count
+        ))
+        '''
+
+        cursor.execute("""
+            SELECT album.id
+              FROM album 
+              ,    artist
+              ,    song
+             WHERE LOWER(album.name)=%s
+               AND album.artist_id=artist.id
+               AND album.id=song.album_id
+            GROUP BY song.album_id
+            HAVING COUNT(song.id)=%s
+        """, (
+            unidecode(album.title).lower(),
+            album.track_count
         ))
 
         matching_album_ids = [id for id, in cursor.fetchall()]
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
 
+        if len(matching_album_ids)>1:
+            logger.debug('Querying for CD/CD Singles')
+            sql = '''
+                SELECT album_format.album_id
+                  FROM album_format, search_format
+                 WHERE album_format.album_id IN (%s)
+                   AND search_format.short_name IN ('CD', 'CDS')
+                   AND album_format.format_id=search_format.id
+            ''' % ','.join(['%s'] * len(matching_album_ids))
+            cursor.execute(sql, tuple(matching_album_ids))
+            '''
+            cursor.execute(
+                """
+                    SELECT album_format.album_id
+                      FROM album_format, search_format
+                     WHERE album_format.album_id IN %s
+                       AND search_format.short_name IN ('CD', 'CDS')
+                       AND album_format.format_id=search_format.id
+                """,
+                tuple(matching_album_ids)
+            )
+            '''
+            matching_album_ids = [id for id, in cursor.fetchall()]
+            logger.debug('{} KLAP3 CD/CDS albums found'.format(len(matching_album_ids)))
+            
         cursor.close()
         logger.debug('')
         return matching_album_ids
