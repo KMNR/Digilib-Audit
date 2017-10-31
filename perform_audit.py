@@ -41,6 +41,9 @@ from datetime import datetime
 import sys
 import os
 import logging
+import time
+import termcolor
+from unidecode import unidecode
 
 logger = logging.getLogger(__appname__)
 
@@ -51,7 +54,6 @@ def main(args):
 
     klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
-    """
     orphaned_digital_albums = []
     ghost_digital_albums = [] # extra
     albums_to_digitize = []
@@ -59,24 +61,71 @@ def main(args):
 
     # Iterate over each album in digilib (sqlite?)
     for album in digilib_db.albums():
+        logger.info('='*120)
+
         # Query KLAP3 for that album using the album's name (mysql)
-        found_album = klap3_db.find(album)
+        found_album_ids = klap3_db.find(album)
 
-        # Filter album results in several potential ways:
-        #   By artist
-        #   By year
-        #   By number of tracks
-        #   By a combination of all three
-        #   Note: there may be two copies of an album in KLAP: one for CDs and
-        #    one for Digital
 
-        if not found_album:
-            orphaned_digital_albums.append(album)
+        if len(found_album_ids)==1:
+            klap3_album = klap3_albums_hash[found_album_ids[0]]
+
+            matching_albums.append(klap3_album)
+            klap3_album.digilib_album = album
+            klap3_album.match_status = 'Exact'
+
+            logger.debug(termcolor.colored('Single match!', 'green'))
+            logger.debug(klap3_album)
+            logger.debug(album)
+            logger.debug('')
+
+        elif len(found_album_ids)>1:
+            '''
+            album_ids_with_same_artist = filter(
+                lambda x: unidecode(klap3_albums_hash[x].artist).lower()==unidecode(album.artist).lower(),
+                found_album_ids
+            )
+            '''
+            # Convert album IDs to matches
+            klap3_album_matches = [
+                klap3_albums_hash[id] for id in found_album_ids
+            ]
+            # Filter album matches by artist name
+            klap3_album_matches_with_same_artist = list(filter(
+                lambda a: unidecode(a.artist).lower()==unidecode(album.artist).lower(),
+                klap3_album_matches
+            ))
+
+            # If there are no album matches with an exact artist name match,
+            # then just keep the matched albums and label them as matched.
+            if not klap3_album_matches_with_same_artist:
+                pass
+            else:
+                klap3_album_matches = klap3_album_matches_with_same_artist
+
+            logger.warning('{} {}'.format(
+                termcolor.colored(str(len(found_album_ids)),
+                                  'cyan', 
+                                  attrs=['underline', 'bold']),
+                termcolor.colored('KLAP3 matches for {}:'.format(album),
+                                  'cyan')
+            ))
+            for klap3_album in klap3_album_matches:
+                logger.debug(klap3_album)
+                klap3_album.digilib_album = album
+                klap3_album.match_status = 'Multiple Matches'
+                matching_albums.append(klap3_album)
+
+            logger.debug('')
+            time.sleep(5)
+            #raise ValueError('Multiple KLAP3 matches were found for {}'.format(album))
 
         else:
-            matching_albums.append(found_album)
-            klap3_albums_hash[found_album.id].digilib_album = album
+            logger.debug(termcolor.colored('No matches: {}'.format(album), 
+                                           'red'))
+            orphaned_digital_albums.append(album)
 
+    """
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that
     #  are in the digital library but not in KLAP
