@@ -100,8 +100,6 @@ def main(args):
                 klap3_album.match_status = 'Multiple Matches'
                 matching_albums.append(klap3_album)
 
-            time.sleep(5)
-
         else:
             logger.debug(termcolor.colored('No matches: {}'.format(album), 
                                            'red'))
