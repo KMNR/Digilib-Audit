@@ -31,13 +31,16 @@ class DigilibDatabase(object):
             GROUP BY Song.album
         """)
         for t in albums:
-            digilib_album = DigilibAlbum(t)
+            digilib_album = DigilibAlbum(*t)
             yield digilib_album
 
 
 class DigilibAlbum(object):
-    def __init__(self, db_tuple):
-        self.title, self.artist, self.track_count, self.year = db_tuple
+    def __init__(self, title, artist, track_count, year):
+        self.title = title
+        self.artist = artist
+        self.track_count = track_count
+        self.year = year
 
     def __str__(self):
         return (
