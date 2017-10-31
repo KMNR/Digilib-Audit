@@ -53,8 +53,8 @@ class KLAP3Album(object):
         return termcolor.colored(
             (
                 ' {0.library_code: <10} │'
-                ' {0.title: ^30} │'
-                ' {0.artist: ^30}'
+                ' {0.title: ^60} │'
+                ' {0.artist: ^60}'
             ).format(self),
             self.color_coding[self.match_status]
         )
