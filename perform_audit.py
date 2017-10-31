@@ -95,12 +95,18 @@ def main(args):
                 termcolor.colored('KLAP3 matches for {}:'.format(album),
                                   'cyan')
             ))
-            for klap3_album in klap3_album_matches:
-                logger.debug(klap3_album)
-                klap3_album.digilib_album = album
-                klap3_album.match_status = 'Multiple Matches'
-                matching_albums.append(klap3_album)
-            time.sleep(10)
+
+            with open('multiple_album_matches.txt', 'a') as f:
+                f.write('{}\n'.format(album))
+                for klap3_album in klap3_album_matches:
+                    logger.debug(klap3_album)
+                    klap3_album.digilib_album = album
+                    klap3_album.match_status = 'Multiple Matches'
+                    matching_albums.append(klap3_album)
+
+                    f.write('{}\n'.format(klap3_album))
+
+                f.write('\n')
 
         else:
             logger.debug(termcolor.colored('No matches: {}'.format(album), 
