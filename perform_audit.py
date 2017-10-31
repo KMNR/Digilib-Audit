@@ -43,8 +43,9 @@ import os
 import logging
 import time
 import termcolor
-from unidecode import unidecode
+import progressbar
 
+progressbar.streams.wrap_stderr()
 logger = logging.getLogger(__appname__)
 
 
@@ -59,8 +60,10 @@ def main(args):
     albums_to_digitize = []
     matching_albums = []
 
-    # Iterate over each album in digilib (sqlite?)
-    for album in digilib_db.albums():
+    # Iterate over each album in digilib
+    digilib_album_count = digilib_db.album_count()
+    progress = progressbar.ProgressBar(max_value=digilib_album_count)
+    for i, album in enumerate(digilib_db.albums(), 1):
         logger.info('='*120)
 
         # Query KLAP3 for that album using the album's name (mysql)
@@ -104,6 +107,7 @@ def main(args):
                                            'red'))
             orphaned_digital_albums.append(album)
 
+        progress.update(i)
         logger.debug('')
 
     """
