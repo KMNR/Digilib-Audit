@@ -63,7 +63,8 @@ def main(args):
     # Iterate over each album in digilib
     digilib_album_count = digilib_db.album_count()
     progress = progressbar.ProgressBar(max_value=digilib_album_count)
-    for i, album in enumerate(digilib_db.albums(), 1):
+    for i, album in enumerate(digilib_db.albums()):
+        progress.update(i)
         logger.info('='*120)
 
         # Query KLAP3 for that album using the album's name (mysql)
@@ -99,13 +100,13 @@ def main(args):
                 klap3_album.digilib_album = album
                 klap3_album.match_status = 'Multiple Matches'
                 matching_albums.append(klap3_album)
+            time.sleep(10)
 
         else:
             logger.debug(termcolor.colored('No matches: {}'.format(album), 
                                            'red'))
             orphaned_digital_albums.append(album)
 
-        progress.update(i)
         logger.debug('')
 
     """
