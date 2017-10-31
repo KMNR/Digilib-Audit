@@ -26,11 +26,11 @@ class KLAP3(object):
             ,      artist.name
             ,      album.missing
             ,      search_format.short_name
-            FROM   album,
-                   genre,
-                   artist,
-                   album_format,
-                   search_format
+            FROM   album
+            ,      genre
+            ,      artist
+            ,      album_format
+            ,      search_format
             WHERE  artist.genre_id=genre.id
               AND  album.artist_id=artist.id
               AND  album.id=album_format.album_id 
