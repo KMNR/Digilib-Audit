@@ -21,10 +21,11 @@ class DigilibDatabase(object):
         '''
 
         albums = cursor.execute("""
-            SELECT Album.title as AlbumTitle,
-                   Artist.name as ArtistName,
-                   COUNT(Song.id) as TrackCount, 
-                   Album.year as Year
+            SELECT Album.title as AlbumTitle
+            ,      Artist.name as ArtistName
+            ,      COUNT(Song.id) as TrackCount 
+            ,      Album.year as Year
+            ,      Album.filesystem_path as Path
             FROM Album, Artist, Song
             WHERE Album.artist=Artist.id
               AND Song.album=Album.id
@@ -48,14 +49,15 @@ class DigilibDatabase(object):
 
 
 class DigilibAlbum(object):
-    def __init__(self, title, artist, track_count, year):
+    def __init__(self, title, artist, track_count, year, path):
         self.title = title
         self.artist = artist
         self.track_count = track_count
         self.year = year
+        self.path = path
 
     def __str__(self):
         return (
             'Digilib Album: {0.title} ({0.year}) by {0.artist}'
-            ' -- {0.track_count} tracks'
+            ' -- {0.track_count} tracks -- {0.path}'
         ).format(self)
