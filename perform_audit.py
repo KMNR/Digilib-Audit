@@ -43,9 +43,10 @@ import os
 import logging
 import time
 import termcolor
-import progressbar
 
-progressbar.streams.wrap_stderr()
+#import progressbar
+#progressbar.streams.wrap_stderr()
+
 logger = logging.getLogger(__appname__)
 
 
@@ -62,9 +63,9 @@ def main(args):
 
     # Iterate over each album in digilib
     digilib_album_count = digilib_db.album_count()
-    progress = progressbar.ProgressBar(max_value=digilib_album_count)
+    #progress = progressbar.ProgressBar(max_value=digilib_album_count)
     for i, album in enumerate(digilib_db.albums()):
-        progress.update(i)
+        #progress.update(i)
         logger.info('='*120)
 
         # Query KLAP3 for that album using the album's name (mysql)
