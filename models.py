@@ -147,7 +147,10 @@ class MutagenCompatibleSongFile(SongFile):
                     self.tracknumber = tnumber
 
             else:
-                self.tracknumber = int(tracknumber_string)
+                try:
+                    self.tracknumber = int(tracknumber_string)
+                except:
+                    self.tracknumber = tnumber
 
         else:
             self.tracknumber = tnumber
@@ -163,7 +166,8 @@ class MutagenCompatibleSongFile(SongFile):
             except ValueError:
                 if '-00-00' in date_string:
                     release_date = datetime.date(year=int(date_string[:4]))
-
+                elif date_string == '0':
+                    release_date = None
                 else:
                     release_date = datetime.datetime.strptime(
                         date_string.split(' ')[0],
