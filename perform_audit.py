@@ -85,24 +85,20 @@ def main(args):
                 matching_albums.append(klap3_album)
 
                 print(' {libcode} │'
-                            ' {k3_album: ^40} │'
-                            ' {dl_album: ^40} │'
-                            ' {k3_artist: ^40} │'
-                            ' {dl_artist: ^40} │'
-                            ' {track_count: >2} │'
-                            ' {dl_year} │'
-                            ' {path}'.format(
+                      ' {album: ^60} │'
+                      ' {artist: ^60} │'
+                      ' {track_count: >2} │'
+                      ' {year} │'
+                      ' {path}'.format(
                     libcode=termcolor.colored(
                         '{: ^10}'.format(klap3_album.library_code),
                         'green'
                     ),
-                    k3_album=klap3_album.title,
-                    k3_artist=klap3_album.artist,
-                    track_count=klap3_album.track_count,
-                    dl_album=album.title,
-                    dl_artist=album.artist,
-                    dl_year=album.year,
-                    path=album.path
+                    track_count=album.track_count,
+                    album=album.title,
+                    artist=album.artist,
+                    year=album.year,
+                    path=album.path.replace('/media/kp/bobcat/digilib/', '')
                 ))
 
             if len(found_album_ids)==1:
@@ -131,23 +127,20 @@ def main(args):
             logger.debug(termcolor.colored('No matches: {}'.format(album),
                                            'red'))
             print(' {colored_NA} │'
-                        ' {empty: ^40} │'
-                        ' {dl_album: ^40} │'
-                        ' {empty: ^40} │'
-                        ' {dl_artist: ^40} │'
-                        ' {track_count: >2} │'
-                        ' {dl_year} │'
-                        ' {path}'.format(
+                  ' {dl_album: ^60} │'
+                  ' {dl_artist: ^60} │'
+                  ' {track_count: >2} │'
+                  ' {dl_year} │'
+                  ' {path}'.format(
                 colored_NA=termcolor.colored(
                     '{: ^10}'.format('N/A'),
                     'red'
                 ),
-                empty='',
                 track_count=album.track_count,
                 dl_album=album.title,
                 dl_artist=album.artist,
                 dl_year=album.year,
-                path=album.path
+                path=album.path.replace('/media/kp/bobcat/digilib/', '')
             ))
             orphaned_digital_albums.append(album)
 
