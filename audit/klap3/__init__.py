@@ -170,6 +170,24 @@ class KLAP3(object):
 
         # Grab the names and ids of albums performed by an artist
         #  with a given number of songs.
+        # TODO: materialized view with the following parameters
+        # mview_album_artist_trackcount(
+        #     album_id, album_name, artist_name, track_count, library_code
+        # )
+        # cursor.execute(
+        #     '''
+        #         SELECT id
+        #         ,      name
+        #         FROM   mview_album_artist_trackcount
+        #         WHERE  artist_name=%s
+        #           AND  track_count=%s
+        #     ''',
+        #     (
+        #         album.artist,
+        #         album.track_count
+        #     )
+        # )
+
         cursor.execute(
             '''
                 SELECT album.id
