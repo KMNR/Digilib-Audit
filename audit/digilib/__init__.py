@@ -47,7 +47,7 @@ class DigilibDatabase(object):
                 SELECT * 
                 FROM   Artist
                 WHERE  Artist.id=(
-                       SELECT artist_id
+                       SELECT Album.artist
                        FROM   Album
                        WHERE  Album.id=:album_id
                 )
@@ -67,7 +67,7 @@ class DigilibDatabase(object):
             '''
                 SELECT * 
                 FROM   Song
-                WHERE  album_id=:album_id
+                WHERE  album=:album_id
             ''',
             {'album_id': album_id}
         )
@@ -75,4 +75,4 @@ class DigilibDatabase(object):
 
         cursor.close()
 
-        return [models.DigilibArtist(self, *t) for t in T]
+        return [models.DigilibSong(self, *t) for t in T]
