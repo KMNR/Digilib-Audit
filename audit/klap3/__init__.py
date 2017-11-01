@@ -34,22 +34,25 @@ class KLAP3(object):
         cursor = self.db.cursor()
 
         # Find album by matching album title, artist name, and track count.
-        cursor.execute("""
-            SELECT album.id
-              FROM album 
-              ,    artist
-              ,    song
-             WHERE LOWER(album.name)=%s
-               AND LOWER(artist.name)=%s
-               AND album.artist_id=artist.id
-               AND album.id=song.album_id
-            GROUP BY song.album_id
-            HAVING COUNT(song.id)=%s
-        """, (
-            unidecode(album.title).lower(),
-            unidecode(album.artist).lower(),
-            album.track_count
-        ))
+        cursor.execute(
+            """
+                SELECT album.id
+                FROM   album 
+                ,      artist
+                ,      song
+                 WHERE LOWER(album.name)=:album_name
+                   AND LOWER(artist.name)=:artist_name
+                   AND album.artist_id=artist.id
+                   AND album.id=song.album_id
+                GROUP BY song.album_id
+                HAVING COUNT(song.id)=:track_count
+            """,
+            {
+                'album_name': unidecode(album.title).lower(),
+                'artist_name': unidecode(album.artist).lower(),
+                'track_count': album.track_count
+            }
+        )
 
         matching_album_ids = [id for id, in cursor.fetchall()]
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
