@@ -1,3 +1,6 @@
+import os
+
+
 class DigilibArtist(object):
     # Artist(_id:int_, name:str)
     def __init__(self, db, id, name):
@@ -16,7 +19,8 @@ class DigilibAlbum(object):
         self.id = id
         self.title = title
         self.year = year
-        self.path = path
+        self.path = os.path.dirname(
+            path.replace('/media/kp/bobcat/digilib/',''))
         self.artist_id = artist_id
 
         self._artist = None

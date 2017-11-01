@@ -98,7 +98,7 @@ def main(args):
                     album=album.title,
                     artist=album.artist,
                     year=album.year,
-                    path=album.path.replace('/media/kp/bobcat/digilib/', '')
+                    path=album.path
                 ))
 
             if len(found_album_ids)==1:
@@ -140,7 +140,7 @@ def main(args):
                 dl_album=album.title,
                 dl_artist=album.artist,
                 dl_year=album.year,
-                path=album.path.replace('/media/kp/bobcat/digilib/', '')
+                path=album.path
             ))
             orphaned_digital_albums.append(album)
 
