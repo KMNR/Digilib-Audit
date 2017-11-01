@@ -1,5 +1,8 @@
 import sqlite3
 import logging
+
+from audit.digilib import models
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,20 +23,9 @@ class DigilibDatabase(object):
         Song(_id:int_, title:str, duration:int, track_number:int, album:int, filesystem_path:int, artist:int)
         '''
 
-        albums = cursor.execute("""
-            SELECT Album.title as AlbumTitle
-            ,      Artist.name as ArtistName
-            ,      COUNT(Song.id) as TrackCount 
-            ,      Album.year as Year
-            ,      Album.filesystem_path as Path
-            FROM Album, Artist, Song
-            WHERE Album.artist=Artist.id
-              AND Song.album=Album.id
-            GROUP BY Song.album
-        """)
-        for t in albums:
-            digilib_album = DigilibAlbum(*t)
-            yield digilib_album
+        cursor.execute('SELECT * FROM Album')
+        for t in cursor:
+            yield models.DigilibAlbum(self, *t)
 
         cursor.close()
 
@@ -47,17 +39,40 @@ class DigilibDatabase(object):
 
         return count
 
+    def artist_of(self, album_id):
+        cursor = self.connection.cursor()
 
-class DigilibAlbum(object):
-    def __init__(self, title, artist, track_count, year, path):
-        self.title = title
-        self.artist = artist
-        self.track_count = track_count
-        self.year = year
-        self.path = path
+        cursor.execute(
+            '''
+                SELECT * 
+                FROM   Artist
+                WHERE  Artist.id=(
+                       SELECT artist_id
+                       FROM   Album
+                       WHERE  Album.id=:album_id
+                )
+            ''',
+            {'album_id': album_id}
+        )
+        t = cursor.fetchone()
 
-    def __str__(self):
-        return (
-            'Digilib Album: {0.title} ({0.year}) by {0.artist}'
-            ' -- {0.track_count} tracks -- {0.path}'
-        ).format(self)
+        cursor.close()
+
+        return models.DigilibArtist(self, *t)
+
+    def tracks_of(self, album_id):
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            '''
+                SELECT * 
+                FROM   Song
+                WHERE  album_id=:album_id
+            ''',
+            {'album_id': album_id}
+        )
+        T = cursor.fetchmany()
+
+        cursor.close()
+
+        return [models.DigilibArtist(self, *t) for t in T]

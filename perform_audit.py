@@ -27,6 +27,7 @@ LICENSE
 	Copyright 2017 Doug McGeehan - GNU GPLv3
 
 """
+import csv
 import config
 from audit import digilib, klap3
 
@@ -41,8 +42,8 @@ from datetime import datetime
 import sys
 import os
 import logging
-import time
 import termcolor
+from audit.klap3.models import KLAP3Album
 
 #import progressbar
 #progressbar.streams.wrap_stderr()
@@ -73,53 +74,47 @@ def main(args):
         # Query KLAP3 for that album using the album's name (mysql)
         found_album_ids = klap3_db.find(album)
 
-        try:
-            if len(found_album_ids)==1:
-                klap3_album = klap3_albums_hash[found_album_ids[0]]
+        if len(found_album_ids)==1:
+            klap3_album = klap3_albums_hash[found_album_ids[0]]
 
-                matching_albums.append(klap3_album)
-                klap3_album.digilib_album = album
-                klap3_album.match_status = 'Exact'
+            matching_albums.append(klap3_album)
+            klap3_album.digilib_album = album
+            klap3_album.match_status = 'Exact'
 
-                logger.debug(termcolor.colored('Single match!', 'green'))
-                logger.debug(klap3_album)
-                logger.debug(album)
+            logger.debug(termcolor.colored('Single match!', 'green'))
+            logger.debug(klap3_album)
+            logger.debug(album)
 
-            elif len(found_album_ids)>1:
-                # Convert album IDs to matches
-                klap3_album_matches = [
-                    klap3_albums_hash[id] for id in found_album_ids
-                ]
+        elif len(found_album_ids)>1:
+            # Convert album IDs to matches
+            klap3_album_matches = [
+                klap3_albums_hash[id] for id in found_album_ids
+            ]
 
-                logger.warning('{} {}'.format(
-                    termcolor.colored(str(len(found_album_ids)),
-                                      'cyan',
-                                      attrs=['underline', 'bold']),
-                    termcolor.colored('KLAP3 matches for {}:'.format(album),
-                                      'cyan')
-                ))
+            logger.warning('{} {}'.format(
+                termcolor.colored(str(len(found_album_ids)),
+                                  'cyan',
+                                  attrs=['underline', 'bold']),
+                termcolor.colored('KLAP3 matches for {}:'.format(album),
+                                  'cyan')
+            ))
 
-                with open('multiple_album_matches.txt', 'a') as f:
-                    f.write('{}\n'.format(album))
-                    for klap3_album in klap3_album_matches:
-                        logger.debug(klap3_album)
-                        klap3_album.digilib_album = album
-                        klap3_album.match_status = 'Multiple Matches'
-                        matching_albums.append(klap3_album)
+            with open('multiple_album_matches.txt', 'a') as f:
+                f.write('{}\n'.format(album))
+                for klap3_album in klap3_album_matches:
+                    logger.debug(klap3_album)
+                    klap3_album.digilib_album = album
+                    klap3_album.match_status = 'Multiple Matches'
+                    matching_albums.append(klap3_album)
 
-                        f.write('{}\n'.format(klap3_album))
+                    f.write('{}\n'.format(klap3_album))
 
-                    f.write('\n')
+                f.write('\n')
 
-            else:
-                logger.debug(termcolor.colored('No matches: {}'.format(album),
-                                               'red'))
-                orphaned_digital_albums.append(album)
-
-        except KeyError:
-            logger.exception("Can't find matching KLAP3 albums in hash-map:"
-                             " {}".format(album))
-            unfound_hashmap_albums.append(album)
+        else:
+            logger.debug(termcolor.colored('No matches: {}'.format(album),
+                                           'red'))
+            orphaned_digital_albums.append(album)
 
         logger.debug('')
 
@@ -132,14 +127,17 @@ def main(args):
 
     klap3_albums = sorted(klap3_albums_hash.values(),
                           key=lambda a: a.library_code)
-    digitization_task = open('digitization_task.tsv', 'w')
-    from audit.klap3.models import KLAP3Album
-    digitization_task.write(KLAP3Album.header + '\n')
-    for album in klap3_albums:
-        logger.info(album.colored())
-        digitization_task.write(album.csv() + '\n')
 
-    digitization_task.close()
+    with open('digitization_task.csv', 'w') as digitization_spreadsheet_file:
+        digitization_spreadsheet = csv.DictWriter(
+            digitization_spreadsheet_file,
+            fieldnames=KLAP3Album.fieldnames
+        )
+        digitization_spreadsheet.writeheader()
+
+        for album in klap3_albums:
+            logger.info(album.colored())
+            digitization_spreadsheet.writerow(album.dict())
 
     logger.warning('Unable to find {} KLAP3 albums in initial hashmap:'.format(
         len(unfound_hashmap_albums)

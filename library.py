@@ -1,6 +1,4 @@
 import os
-import traceback
-
 import config
 import db
 import models

@@ -16,33 +16,14 @@ class KLAP3(object):
 
     def albums(self):
         cursor = self.db.cursor()
-
-        cursor.execute("""
-            SELECT album.id
-            ,      album.name
-            ,      genre.abbreviation
-            ,      artist.lib_number
-            ,      album.letter
-            ,      artist.name
-            ,      album.missing
-            ,      search_format.short_name
-            FROM   album
-            ,      genre
-            ,      artist
-            ,      album_format
-            ,      search_format
-            WHERE  artist.genre_id=genre.id
-              AND  album.artist_id=artist.id
-              AND  album.id=album_format.album_id 
-              AND  album_format.format_id=search_format.id
-        """)
+        cursor.execute('SELECT * FROM album')
 
         while True:
             t = cursor.fetchone()
             if t is None:
                 break
 
-            klap3_album = models.KLAP3Album(*t)
+            klap3_album = models.KLAP3Album(self, *t)
             yield klap3_album
 
         cursor.close()
@@ -91,3 +72,69 @@ class KLAP3(object):
         logger.debug('')
         return matching_album_ids
 
+    def artist_of(self, album):
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            'SELECT * '
+            '  FROM artist '
+            ' WHERE artist.id=('
+            '     SELECT album.artist_id '
+            '       FROM album '
+            '      WHERE album.id=:album'
+            ' )',
+            {
+                'album': album
+            }
+        )
+        t = cursor.fetchone()
+        cursor.close()
+
+        artist = models.KLAP3Artist(self, *t)
+        return artist
+
+    def library_code_of(self, album_id):
+        cursor = self.db.cursor()
+        #     ,      genre.abbreviation
+        #     ,      artist.lib_number
+        #     ,      album.letter
+        cursor.execute(
+            '''
+                SELECT genre.abbreviation
+                ,      artist.lib_number 
+                ,      album.letter
+                FROM   genre
+                ,      artist
+                ,      album
+                WHERE  album.id=:album_id
+                  AND  album.artist_id=artist.id
+                  AND  artist.genre_id=genre.id
+            ''',
+            {'album_id': album_id}
+        )
+        genre, artist, album = cursor.fetchone()
+        cursor.close()
+
+        library_code = '{}{:0>5}{}'.format(genre, artist, album)
+        return library_code
+
+    def format_of(self, album_id):
+        cursor = self.db.cursor()
+        cursor.execute(
+            '''
+                SELECT short_name
+                FROM   search_format
+                WHERE  search_format.id
+                   IN  (
+                       SELECT format_id
+                       FROM   album_format
+                       WHERE  album_format.album_id=:album_id
+                   )
+            ''',
+            {'album_id': album_id}
+        )
+        T = [t for t, in cursor.fetchmany()]
+        T.sort()
+        cursor.close()
+
+        return ','.join(T)
