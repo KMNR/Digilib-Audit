@@ -236,23 +236,22 @@ class KLAP3(object):
             for w in x
             if strip_away_non_alphanums(w)
         ]
-
-        words_of_given_album_title = set(
-            strip_away_from_all_words(album.title.lower().split(' '))
+        set_of_proper_lowercase_words = lambda s: set(
+            strip_away_from_all_words(unidecode(s).lower().split(' '))
         )
+
+        words_of_given_album_title = set_of_proper_lowercase_words(album.title)
 
         logger.debug('Words in given album title: {}'.format(
             words_of_given_album_title))
         logger.debug('Found album words:')
         for album_id, album_title in matching_albums:
-            logger.debug(set(unidecode(album_title).lower().split(' ')))
+            logger.debug(set_of_proper_lowercase_words(album_title))
         logger.debug('-'*80)
 
         album_name_word_match_count = lambda album: len(
             words_of_given_album_title.intersection(
-                strip_away_from_all_words(
-                    unidecode(album[1]).lower().split(' ')
-                )
+                set_of_proper_lowercase_words(album[1])
             )
         )
 
