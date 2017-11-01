@@ -29,7 +29,7 @@ class KLAP3(object):
         cursor.close()
 
     def find(self, album):
-        logger.info('Searching KLAP3 for {}'.format(album))
+        logger.debug('Searching KLAP3 for {}'.format(album))
         
         cursor = self.db.cursor()
 
@@ -147,7 +147,7 @@ class KLAP3(object):
             '''
                 SELECT * 
                 FROM   song
-                WHERE  album=%s
+                WHERE  album_id=%s
             ''',
             (album_id,)
         )

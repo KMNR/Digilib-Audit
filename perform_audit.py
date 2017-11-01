@@ -69,7 +69,6 @@ def main(args):
     #progress = progressbar.ProgressBar(max_value=digilib_album_count)
     for i, album in enumerate(digilib_db.albums()):
         #progress.update(i)
-        logger.info('='*120)
 
         # Query KLAP3 for that album using the album's name (mysql)
         found_album_ids = klap3_db.find(album)
@@ -85,7 +84,7 @@ def main(args):
                 klap3_album.digilib_album = album
                 matching_albums.append(klap3_album)
 
-                logger.info(' {libcode} │'
+                print(' {libcode} │'
                             ' {k3_album: ^40} │'
                             ' {dl_album: ^40} │'
                             ' {k3_artist: ^40} │'
@@ -131,7 +130,7 @@ def main(args):
         else:
             logger.debug(termcolor.colored('No matches: {}'.format(album),
                                            'red'))
-            logger.info(' {colored_NA} │'
+            print(' {colored_NA} │'
                         ' {empty: ^40} │'
                         ' {dl_album: ^40} │'
                         ' {empty: ^40} │'
