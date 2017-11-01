@@ -1,4 +1,5 @@
 import os
+from unidecode import unidecode
 
 
 class DigilibArtist(object):
@@ -9,7 +10,7 @@ class DigilibArtist(object):
         self.name = name
 
     def __str__(self):
-        return self.name
+        return unidecode(self.name)
 
 
 class DigilibAlbum(object):

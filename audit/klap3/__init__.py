@@ -60,7 +60,11 @@ class KLAP3(object):
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
 
         if len(matching_album_ids) == 0:
-            matching_album_ids = self.find_by_artist_and_track_count(album)
+            closest_matched_album_id = self.find_by_artist_and_track_count(album)
+            if closest_matched_album_id is None:
+                matching_album_ids = []
+            else:
+                matching_album_ids = [closest_matched_album_id]
 
         # if len(matching_album_ids)>1:
         #     logger.debug('Multiple matches found. Querying for CD/CD Singles')
@@ -222,7 +226,7 @@ class KLAP3(object):
 
         most_closely_matched_album = max(
             matching_albums,
-            album_name_word_match_count
+            key=album_name_word_match_count,
         )
         logger.debug('Album with closest match: {}'.format(
             most_closely_matched_album[1]))
