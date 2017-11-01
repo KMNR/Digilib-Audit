@@ -71,8 +71,8 @@ class DigilibDatabase(object):
             ''',
             {'album_id': album_id}
         )
-        T = cursor.fetchmany()
-
+        T = cursor.fetchall()
+        logger.debug('{} tracks found for album {}'.format(len(T), album_id))
         cursor.close()
 
         return [models.DigilibSong(self, *t) for t in T]
