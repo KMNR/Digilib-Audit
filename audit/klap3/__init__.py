@@ -40,18 +40,18 @@ class KLAP3(object):
                 FROM   album 
                 ,      artist
                 ,      song
-                 WHERE LOWER(album.name)=:album_name
-                   AND LOWER(artist.name)=:artist_name
+                WHERE  LOWER(album.name)=%s
+                   AND LOWER(artist.name)=%s 
                    AND album.artist_id=artist.id
                    AND album.id=song.album_id
                 GROUP BY song.album_id
-                HAVING COUNT(song.id)=:track_count
+                HAVING COUNT(song.id)=%s 
             """,
-            {
-                'album_name': unidecode(album.title).lower(),
-                'artist_name': unidecode(album.artist).lower(),
-                'track_count': album.track_count
-            }
+            (
+                unidecode(album.title).lower(),
+                unidecode(album.artist).lower(),
+                album.track_count
+            )
         )
 
         matching_album_ids = [id for id, in cursor.fetchall()]
@@ -84,11 +84,9 @@ class KLAP3(object):
             ' WHERE artist.id=('
             '     SELECT album.artist_id '
             '       FROM album '
-            '      WHERE album.id=:album'
+            '      WHERE album.id=%s'
             ' )',
-            {
-                'album': album
-            }
+            (album,)
         )
         t = cursor.fetchone()
         cursor.close()
@@ -109,11 +107,11 @@ class KLAP3(object):
                 FROM   genre
                 ,      artist
                 ,      album
-                WHERE  album.id=:album_id
+                WHERE  album.id=%s
                   AND  album.artist_id=artist.id
                   AND  artist.genre_id=genre.id
             ''',
-            {'album_id': album_id}
+            (album_id,)
         )
         genre, artist, album = cursor.fetchone()
         cursor.close()
@@ -131,10 +129,10 @@ class KLAP3(object):
                    IN  (
                        SELECT format_id
                        FROM   album_format
-                       WHERE  album_format.album_id=:album_id
+                       WHERE  album_format.album_id=%s
                    )
             ''',
-            {'album_id': album_id}
+            (album_id,)
         )
         T = [t for t, in cursor.fetchmany()]
         T.sort()
