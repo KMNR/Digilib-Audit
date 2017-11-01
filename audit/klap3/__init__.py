@@ -228,7 +228,19 @@ class KLAP3(object):
 
         # Isolate the album that has the most matching words as that of
         #  the given album.
-        words_of_given_album_title = set(album.title.lower().split(' '))
+
+        strip_away_non_alphanums = lambda x: ''.join(c for c in x if
+                                                     c.isalnum())
+        strip_away_from_all_words = lambda x: [
+            strip_away_non_alphanums(w)
+            for w in x
+            if strip_away_non_alphanums(w)
+        ]
+
+        words_of_given_album_title = set(
+            strip_away_from_all_words(album.title.lower().split(' '))
+        )
+
         logger.debug('Words in given album title: {}'.format(
             words_of_given_album_title))
         logger.debug('Found album words:')
@@ -238,7 +250,9 @@ class KLAP3(object):
 
         album_name_word_match_count = lambda album: len(
             words_of_given_album_title.intersection(
-                unidecode(album[1]).lower().split(' ')
+                strip_away_from_all_words(
+                    unidecode(album[1]).lower().split(' ')
+                )
             )
         )
 
