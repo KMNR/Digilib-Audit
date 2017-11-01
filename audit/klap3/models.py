@@ -30,6 +30,20 @@ class KLAP3Album(object):
         'Multiple Matches': 'red',
         'None': 'green'
     }
+    header = '\t'.join([
+        'digitized',
+        'id',
+        'library_code',
+        'title',
+        'artist',
+        'format',
+        'is_missing',
+        'matching_status',
+        'digilib_title',
+        'digilib_artist',
+        'digilib_year',
+        'digilib_path',
+    ])
 
     def __init__(self, id, title, genre_code, artist_number, album_letter,
                  artist, missing_flag, format):
@@ -59,3 +73,17 @@ class KLAP3Album(object):
             ).format(self),
             self.color_coding[self.match_status]
         )
+
+    def csv(self):
+        digitized = 'Yes' if self.digilib_album else ''
+        is_missing = 'True' if self.is_missing else 'False'
+        values = [digitized, self.id, self.library_code, self.title, 
+                  self.artist, self.format, is_missing, self.format,
+                  self.match_status]
+        if self.digilib_album:
+            values.extend([self.digilib_album.title,
+                           self.digilib_album.artist,
+                           self.digilib_album.year,
+                           self.digilib_album.path])
+        return '\t'.join(map(str, values))
+

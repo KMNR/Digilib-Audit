@@ -132,8 +132,14 @@ def main(args):
 
     klap3_albums = sorted(klap3_albums_hash.values(),
                           key=lambda a: a.library_code)
+    digitization_task = open('digitization_task.tsv', 'w')
+    from audit.klap3.models import KLAP3Album
+    digitization_task.write(KLAP3Album.header + '\n')
     for album in klap3_albums:
         logger.info(album.colored())
+        digitization_task.write(album.csv() + '\n')
+
+    digitization_task.close()
 
     logger.warning('Unable to find {} KLAP3 albums in initial hashmap:'.format(
         len(unfound_hashmap_albums)
