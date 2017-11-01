@@ -74,49 +74,83 @@ def main(args):
         # Query KLAP3 for that album using the album's name (mysql)
         found_album_ids = klap3_db.find(album)
 
-        if len(found_album_ids)==1:
-            klap3_album = klap3_albums_hash[found_album_ids[0]]
-
-            matching_albums.append(klap3_album)
-            klap3_album.digilib_album = album
-            klap3_album.match_status = 'Exact'
-
-            logger.debug(termcolor.colored('Single match!', 'green'))
-            logger.debug(klap3_album)
-            logger.debug(album)
-
-        elif len(found_album_ids)>1:
+        if found_album_ids:
             # Convert album IDs to matches
             klap3_album_matches = [
                 klap3_albums_hash[id] for id in found_album_ids
             ]
 
-            logger.warning('{} {}'.format(
-                termcolor.colored(str(len(found_album_ids)),
-                                  'cyan',
-                                  attrs=['underline', 'bold']),
-                termcolor.colored('KLAP3 matches for {}:'.format(album),
-                                  'cyan')
-            ))
+            for klap3_album in klap3_album_matches:
+                logger.debug(klap3_album)
+                klap3_album.digilib_album = album
+                matching_albums.append(klap3_album)
 
-            with open('multiple_album_matches.txt', 'a') as f:
-                f.write('{}\n'.format(album))
-                for klap3_album in klap3_album_matches:
-                    logger.debug(klap3_album)
-                    klap3_album.digilib_album = album
-                    klap3_album.match_status = 'Multiple Matches'
-                    matching_albums.append(klap3_album)
+                logger.info(' {libcode} │'
+                            ' {k3_album: ^40} │'
+                            ' {dl_album: ^40} │'
+                            ' {k3_artist: ^40} │'
+                            ' {dl_artist: ^40} │'
+                            ' {track_count: >2} │'
+                            ' {dl_year} │'
+                            ' {path}'.format(
+                    libcode=termcolor.colored(
+                        '{: ^10}'.format(klap3_album.library_code),
+                        'green'
+                    ),
+                    k3_album=klap3_album.title,
+                    k3_artist=klap3_album.artist,
+                    track_count=klap3_album.track_count,
+                    dl_album=album.title,
+                    dl_artist=album.artist,
+                    dl_year=album.year,
+                    path=album.path
+                ))
 
-                    f.write('{}\n'.format(klap3_album))
+            if len(found_album_ids)==1:
+                klap3_album_matches[0].match_status = 'Exact'
+                logger.debug(termcolor.colored('Single match!', 'green'))
 
-                f.write('\n')
+            elif len(found_album_ids)>1:
+                logger.warning('{} {}'.format(
+                    termcolor.colored(str(len(found_album_ids)),
+                                      'cyan',
+                                      attrs=['underline', 'bold']),
+                    termcolor.colored('KLAP3 matches for {}:'.format(album),
+                                      'cyan')
+                ))
+
+                with open('multiple_album_matches.txt', 'a') as f:
+                    f.write('{}\n'.format(album))
+                    for klap3_album in klap3_album_matches:
+                        klap3_album.match_status = 'Multiple Matches'
+
+                        f.write('{}\n'.format(klap3_album))
+
+                    f.write('\n')
 
         else:
             logger.debug(termcolor.colored('No matches: {}'.format(album),
                                            'red'))
+            logger.info(' {colored_NA} │'
+                        ' {empty: ^40} │'
+                        ' {dl_album: ^40} │'
+                        ' {empty: ^40} │'
+                        ' {dl_artist: ^40} │'
+                        ' {track_count: >2} │'
+                        ' {dl_year} │'
+                        ' {path}'.format(
+                colored_NA=termcolor.colored(
+                    '{: ^10}'.format('N/A'),
+                    'red'
+                ),
+                empty='',
+                track_count=album.track_count,
+                dl_album=album.title,
+                dl_artist=album.artist,
+                dl_year=album.year,
+                path=album.path
+            ))
             orphaned_digital_albums.append(album)
-
-        logger.debug('')
 
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that

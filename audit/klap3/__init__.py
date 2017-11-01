@@ -141,3 +141,20 @@ class KLAP3(object):
         cursor.close()
 
         return ','.join(T)
+
+    def tracks_of(self, album_id):
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            '''
+                SELECT * 
+                FROM   song
+                WHERE  album=%s
+            ''',
+            (album_id,)
+        )
+        T = cursor.fetchall()
+        logger.debug('{} tracks found for album {}'.format(len(T), album_id))
+        cursor.close()
+
+        return [models.KLAP3Song(self, *t) for t in T]

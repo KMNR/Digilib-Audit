@@ -58,6 +58,7 @@ class KLAP3Album(object):
         self._artist = None
         self._library_code = None
         self._format = None
+        self._tracks = None
 
         self.digilib_album = None
         self.match_status = 'None'
@@ -87,6 +88,16 @@ class KLAP3Album(object):
         if self._format is None:
             self._format = self.db.format_of(self.id)
         return self._format
+
+    @property
+    def track_count(self):
+        return len(self.tracks)
+
+    @property
+    def tracks(self):
+        if self._tracks is None:
+            self._tracks = self.db.tracks_of(self.id)
+        return self._tracks
 
     def __str__(self):
         return 'KLAP3: {0.title} by {0.artist} ' \
@@ -154,3 +165,30 @@ class KLAP3Artist(object):
         self.riyl_expires = riyl_expires
         self.differentiate = differentiate
 
+
+'''
++--------------+------------------+------+-----+---------+----------------+
+| Field        | Type             | Null | Key | Default | Extra          |
++--------------+------------------+------+-----+---------+----------------+
+| id           | int(11)          | NO   | PRI | NULL    | auto_increment |
+| album_id     | int(11)          | NO   | MUL | NULL    |                |
+| track_num    | int(10) unsigned | NO   |     | NULL    |                |
+| name         | varchar(200)     | NO   |     | NULL    |                |
+| fcc_status   | varchar(10)      | NO   |     | NULL    |                |
+| last_played  | date             | YES  |     | NULL    |                |
+| times_played | int(10) unsigned | NO   |     | NULL    |                |
+| mbid         | varchar(40)      | NO   |     | NULL    |                |
+| search_slug  | varchar(200)     | NO   | MUL | NULL    |                |
+| recommend    | tinyint(1)       | NO   |     | NULL    |                |
+| md_recommend | tinyint(1)       | NO   |     | NULL    |                |
++--------------+------------------+------+-----+---------+----------------+
+'''
+class KLAP3Song(object):
+    def __init__(self, db, id, album_id, track_num, name, fcc_status,
+                 last_played, times_played, mbid, search_slug, recommend,
+                 md_recommend):
+        self.db = db
+        self.id = id
+        self.album_id = album_id
+        self.track_num = track_num
+        self.title = name
