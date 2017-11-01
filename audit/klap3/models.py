@@ -1,4 +1,7 @@
 import logging
+
+from unidecode import unidecode
+
 logger = logging.getLogger(__name__)
 
 import termcolor
@@ -75,7 +78,7 @@ class KLAP3Album(object):
     def artist(self):
         if self._artist is None:
             self._artist = self.db.artist_of(album=self.id)
-        return self._artist.name
+        return unidecode(self._artist.name)
 
     @property
     def library_code(self):

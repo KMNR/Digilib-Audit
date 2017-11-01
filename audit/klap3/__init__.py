@@ -55,7 +55,12 @@ class KLAP3(object):
         )
 
         matching_album_ids = [id for id, in cursor.fetchall()]
+        cursor.close()
+
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
+
+        if len(matching_album_ids) == 0:
+            matching_album_ids = self.find_by_artist_and_track_count(album)
 
         # if len(matching_album_ids)>1:
         #     logger.debug('Multiple matches found. Querying for CD/CD Singles')
@@ -70,8 +75,7 @@ class KLAP3(object):
         #
         #     matching_album_ids = [id for id, in cursor.fetchall()]
         #     logger.debug('{} KLAP3 CD/CDS albums found'.format(len(matching_album_ids)))
-            
-        cursor.close()
+
         logger.debug('')
         return matching_album_ids
 
@@ -156,3 +160,82 @@ class KLAP3(object):
         cursor.close()
 
         return [models.KLAP3Song(self, *t) for t in T]
+
+    def find_by_artist_and_track_count(self, album):
+        logger.debug('Finding albums by {} with {} songs'.format(
+            album.artist, album.track_count
+        ))
+
+        cursor = self.db.cursor()
+
+        # Grab the names and ids of albums performed by an artist
+        #  with a given number of songs.
+        cursor.execute(
+            '''
+                SELECT album.id
+                ,      album.name
+                FROM   album
+                WHERE  album.id IN (
+                    SELECT album_id
+                    FROM   song
+                    WHERE  song.album_id IN (
+                        SELECT album.id
+                        FROM   album
+                        WHERE  album.artist_id IN (
+                            SELECT artist.id
+                            FROM   artist
+                            WHERE  LOWER(artist.name)=%s
+                        )
+                    )
+                    GROUP BY song.album_id
+                    HAVING COUNT(*)=%s
+                )
+            ''',
+            (
+                album.artist,
+                album.track_count
+            )
+        )
+
+        matching_albums = cursor.fetchall()
+        cursor.close()
+
+        logger.debug('{} albums found'.format(len(matching_albums)))
+        if 0==len(matching_albums):
+            return None
+
+        # Isolate the album that has the most matching words as that of
+        #  the given album.
+        words_of_given_album_title = set(album.title.lower().split(' '))
+        logger.debug('Words in given album title: {}'.format(
+            words_of_given_album_title))
+        logger.debug('Found album words:')
+        for album_id, album_title in matching_albums:
+            logger.debug(set(unidecode(album_title).lower().split(' ')))
+        logger.debug('-'*80)
+
+        album_name_word_match_count = lambda album: len(
+            words_of_given_album_title.intersection(
+                unidecode(album[1]).lower().split(' ')
+            )
+        )
+
+        most_closely_matched_album = max(
+            matching_albums,
+            album_name_word_match_count
+        )
+        logger.debug('Album with closest match: {}'.format(
+            most_closely_matched_album[1]))
+        logger.debug('Compared to search album: {}'.format(
+            album.title
+        ))
+
+        import time
+        if album_name_word_match_count(most_closely_matched_album) == 0:
+            logger.debug('No sufficient match')
+            time.sleep(10)
+            return None
+        else:
+            logger.debug('Sufficient match!')
+            time.sleep(10)
+            return most_closely_matched_album[0]
