@@ -30,6 +30,7 @@ LICENSE
 import csv
 import config
 from audit import digilib, klap3
+from audit.digilib.models import DigilibAlbum
 
 __appname__ = "audit"
 __author__ = "Doug McGeehan"
@@ -66,6 +67,12 @@ def main(args):
     # Iterate over each album in digilib
     unfound_hashmap_albums = []
     digilib_album_count = digilib_db.album_count()
+    digitlib_spreadsheet_file = open('digitization_task.csv', 'w')
+    digitlib_spreadsheet = csv.DictWriter(
+        digitlib_spreadsheet_file,
+        fieldnames=DigilibAlbum.fieldnames
+    )
+    digitlib_spreadsheet.writeheader()
     #progress = progressbar.ProgressBar(max_value=digilib_album_count)
     for i, album in enumerate(digilib_db.albums()):
         #progress.update(i)
@@ -143,6 +150,25 @@ def main(args):
                 path=album.path
             ))
             orphaned_digital_albums.append(album)
+
+        if found_album_ids:
+            for klap3_album_id in found_album_ids:
+                klap3_album = klap3_albums_hash[klap3_album_id]
+                album_dict = album.dict()
+                album_dict.update({
+                    'library_code': klap3_album.library_code,
+                    'klap3id': klap3_album.id
+                })
+                digitlib_spreadsheet.writerow(album_dict)
+        else:
+            album_dict = album.dict()
+            album_dict.update({
+                'library_code': '',
+                'klap3id': ''
+            })
+            digitlib_spreadsheet.writerow(album_dict)
+
+        logger.debug('')
 
     # Build a list of album IDs that are matched
     # Build a list of album names (with artist names, year, album path) that

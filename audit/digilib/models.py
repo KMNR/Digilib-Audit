@@ -15,6 +15,15 @@ class DigilibArtist(object):
 
 class DigilibAlbum(object):
     # Album(_id:int_, title:str, year:int, filesystem_path:str, artist:int)
+    fields = [
+        'library_code',
+        'klap3id',
+        'digilib_title',
+        'digilib_artist',
+        'digilib_year',
+        'digilib_path'
+    ]
+
     def __init__(self, db, id, title, year, path, artist_id):
         self.db = db
         self.id = id
