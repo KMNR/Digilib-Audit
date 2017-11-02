@@ -60,7 +60,7 @@ class KLAP3Album(object):
 
     def __str__(self):
         return 'KLAP3: {0.title} by {0.artist} ' \
-               '-- {0.library_code} ({0.format})'.format(self)
+               '-- {0.library_code} ({0.mediums})'.format(self)
 
 
     def colored(self):
