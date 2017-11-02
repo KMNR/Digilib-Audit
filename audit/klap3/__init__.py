@@ -15,11 +15,13 @@ class KLAP3(object):
         self.db = MySQLdb.connect("localhost", username, password, "klap3")
 
     def create_view(self):
+        # Create a table consisting of data we'll be using. This will speed
+        # up the execution of this script instead of performing a bunch of
+        # select statements with lots of joins.
         logger.info('Creating table with album, artist, track count, '
                     'and library code data')
         cursor = self.db.cursor()
         cursor.execute('DROP TABLE IF EXISTS KLAP3AlbumSummary;')
-        # TODO: GROUP_CONCAT(format SEPARATOR ',')
         cursor.execute(
             '''
                 CREATE TABLE KLAP3AlbumSummary 
@@ -31,6 +33,7 @@ class KLAP3(object):
                        ,      Genre.abbreviation AS libcode_genre
                        ,      Artist.lib_number AS libcode_artist
                        ,      Album.letter AS libcode_album
+                       ,      Format.mediums AS mediums
                        FROM   album Album
                        JOIN   artist Artist
                          ON   Album.artist_id=Artist.id
@@ -43,6 +46,17 @@ class KLAP3(object):
                          ON   TrackCount.album_id=Album.id
                        JOIN   genre Genre
                          ON   Artist.genre_id=Genre.id
+                       JOIN   (
+                                SELECT GROUP_CONCAT(Format.short_name
+                                                    SEPARATOR ',') AS mediums
+                                ,      AlbumFormat.album_id AS album_id
+                                FROM   search_format Format
+                                JOIN   album_format AlbumFormat
+                                  ON   AlbumFormat.format_id=Format.id
+                                GROUP  BY AlbumFormat.album_id
+                                ORDER  BY Format.short_name
+                              ) Format
+                         ON   Album.id=Format.album_id
                 ;
             '''
         )
@@ -98,27 +112,6 @@ class KLAP3(object):
 
         logger.debug('')
         return matching_album_ids
-
-    def format_of(self, album_id):
-        cursor = self.db.cursor()
-        cursor.execute(
-            '''
-                SELECT short_name
-                FROM   search_format
-                WHERE  search_format.id
-                   IN  (
-                       SELECT format_id
-                       FROM   album_format
-                       WHERE  album_format.album_id=%s
-                   )
-            ''',
-            (album_id,)
-        )
-        T = [t for t, in cursor.fetchmany()]
-        T.sort()
-        cursor.close()
-
-        return ','.join(T)
 
     def find_by_artist_and_track_count(self, album):
         logger.debug('Finding albums by {} with {} songs'.format(

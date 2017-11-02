@@ -35,7 +35,7 @@ class KLAP3Album(object):
         'library_code',
         'title',
         'artist',
-        'format',
+        'mediums',
         'matching_status',
         'digilib_title',
         'digilib_artist',
@@ -44,7 +44,7 @@ class KLAP3Album(object):
     ]
 
     def __init__(self, db, id, title, artist, track_count, genre,
-                 artist_number, album_letter):
+                 artist_number, album_letter, mediums):
         self.db = db
         self.id = id
         self.title = title
@@ -54,15 +54,9 @@ class KLAP3Album(object):
                                                 artist_number,
                                                 album_letter)
         # self.format = format
-        self._format = None
+        self.mediums = mediums
         self.digilib_album = None
         self.match_status = 'None'
-
-    @property
-    def format(self):
-        if self._format is None:
-            self._format = self.db.format_of(self.id)
-        return self._format
 
     def __str__(self):
         return 'KLAP3: {0.title} by {0.artist} ' \
@@ -89,7 +83,7 @@ class KLAP3Album(object):
             'library_code': self.library_code,
             'title': self.title,
             'artist': self.artist,
-            'format': self.format,
+            'mediums': self.mediums,
             'matching_status': self.match_status
         }
 
