@@ -37,6 +37,7 @@ class KLAP3Album(object):
         'artist',
         'mediums',
         'matching_status',
+        'is_missing',
         'digilib_title',
         'digilib_artist',
         'digilib_year',
@@ -44,7 +45,7 @@ class KLAP3Album(object):
     ]
 
     def __init__(self, db, id, title, artist, track_count, genre,
-                 artist_number, album_letter, mediums):
+                 artist_number, album_letter, mediums, is_missing):
         self.db = db
         self.id = id
         self.title = title
@@ -53,6 +54,7 @@ class KLAP3Album(object):
         self.library_code = '{}{:0>5}{}'.format(genre,
                                                 artist_number,
                                                 album_letter)
+        self.is_missing = 'True' if bool(is_missing) else 'False'
         # self.format = format
         self.mediums = mediums
         self.digilib_album = None
@@ -76,13 +78,13 @@ class KLAP3Album(object):
 
     def dict(self):
         digitized = 'Yes' if self.digilib_album else ''
-        is_missing = 'True' if self.is_missing else 'False'
         values = {
             'digitized': digitized,
             'id': self.id,
             'library_code': self.library_code,
             'title': self.title,
             'artist': self.artist,
+            'is_missing': self.is_missing,
             'mediums': self.mediums,
             'matching_status': self.match_status
         }

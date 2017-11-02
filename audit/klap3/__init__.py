@@ -34,6 +34,7 @@ class KLAP3(object):
                        ,      Artist.lib_number AS libcode_artist
                        ,      Album.letter AS libcode_album
                        ,      Format.mediums AS mediums
+                       ,      Album.missing AS is_missing
                        FROM   album Album
                        JOIN   artist Artist
                          ON   Album.artist_id=Artist.id
