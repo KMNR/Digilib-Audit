@@ -15,8 +15,11 @@ class KLAP3(object):
         self.db = MySQLdb.connect("localhost", username, password, "klap3")
 
     def create_view(self):
+        logger.info('Creating table with album, artist, track count, '
+                    'and library code data')
         cursor = self.db.cursor()
         cursor.execute('DROP TABLE IF EXISTS KLAP3AlbumSummary;')
+        # TODO: GROUP_CONCAT(format SEPARATOR ',')
         cursor.execute(
             '''
                 CREATE TABLE KLAP3AlbumSummary 
@@ -48,7 +51,7 @@ class KLAP3(object):
 
     def albums(self):
         cursor = self.db.cursor()
-        cursor.execute('SELECT * FROM album')
+        cursor.execute('SELECT * FROM KLAP3AlbumSummary')
 
         while True:
             t = cursor.fetchone()
@@ -68,21 +71,16 @@ class KLAP3(object):
         # Find album by matching album title, artist name, and track count.
         cursor.execute(
             """
-                SELECT album.id
-                FROM   album 
-                ,      artist
-                ,      song
-                WHERE  LOWER(album.name)=%s
-                   AND LOWER(artist.name)=%s 
-                   AND album.artist_id=artist.id
-                   AND album.id=song.album_id
-                GROUP BY song.album_id
-                HAVING COUNT(song.id)=%s 
+                SELECT id
+                FROM   KLAP3AlbumSummary A
+                WHERE  A.track_count=%s
+                   AND LOWER(A.album)=%s
+                   AND LOWER(A.artist)=%s
             """,
             (
+                album.track_count,
                 unidecode(album.title).lower(),
                 unidecode(album.artist).lower(),
-                album.track_count
             )
         )
 
@@ -98,66 +96,8 @@ class KLAP3(object):
             else:
                 matching_album_ids = [closest_matched_album_id]
 
-        # if len(matching_album_ids)>1:
-        #     logger.debug('Multiple matches found. Querying for CD/CD Singles')
-        #     sql = '''
-        #         SELECT album_format.album_id
-        #           FROM album_format, search_format
-        #          WHERE album_format.album_id IN (%s)
-        #            AND search_format.short_name IN ('CD', 'CDS')
-        #            AND album_format.format_id=search_format.id
-        #     ''' % ','.join(['%s'] * len(matching_album_ids))
-        #     cursor.execute(sql, tuple(matching_album_ids))
-        #
-        #     matching_album_ids = [id for id, in cursor.fetchall()]
-        #     logger.debug('{} KLAP3 CD/CDS albums found'.format(len(matching_album_ids)))
-
         logger.debug('')
         return matching_album_ids
-
-    def artist_of(self, album):
-        cursor = self.db.cursor()
-
-        cursor.execute(
-            'SELECT * '
-            '  FROM artist '
-            ' WHERE artist.id=('
-            '     SELECT album.artist_id '
-            '       FROM album '
-            '      WHERE album.id=%s'
-            ' )',
-            (album,)
-        )
-        t = cursor.fetchone()
-        cursor.close()
-
-        artist = models.KLAP3Artist(self, *t)
-        return artist
-
-    def library_code_of(self, album_id):
-        cursor = self.db.cursor()
-        #     ,      genre.abbreviation
-        #     ,      artist.lib_number
-        #     ,      album.letter
-        cursor.execute(
-            '''
-                SELECT genre.abbreviation
-                ,      artist.lib_number 
-                ,      album.letter
-                FROM   genre
-                ,      artist
-                ,      album
-                WHERE  album.id=%s
-                  AND  album.artist_id=artist.id
-                  AND  artist.genre_id=genre.id
-            ''',
-            (album_id,)
-        )
-        genre, artist, album = cursor.fetchone()
-        cursor.close()
-
-        library_code = '{}{:0>5}{}'.format(genre, artist, album)
-        return library_code
 
     def format_of(self, album_id):
         cursor = self.db.cursor()
@@ -180,23 +120,6 @@ class KLAP3(object):
 
         return ','.join(T)
 
-    def tracks_of(self, album_id):
-        cursor = self.db.cursor()
-
-        cursor.execute(
-            '''
-                SELECT * 
-                FROM   song
-                WHERE  album_id=%s
-            ''',
-            (album_id,)
-        )
-        T = cursor.fetchall()
-        logger.debug('{} tracks found for album {}'.format(len(T), album_id))
-        cursor.close()
-
-        return [models.KLAP3Song(self, *t) for t in T]
-
     def find_by_artist_and_track_count(self, album):
         logger.debug('Finding albums by {} with {} songs'.format(
             album.artist, album.track_count
@@ -206,50 +129,47 @@ class KLAP3(object):
 
         # Grab the names and ids of albums performed by an artist
         #  with a given number of songs.
-        # TODO: materialized view with the following parameters
-        # mview_album_artist_trackcount(
-        #     album_id, album_name, artist_name, track_count, library_code
-        # )
-        # cursor.execute(
-        #     '''
-        #         SELECT id
-        #         ,      name
-        #         FROM   mview_album_artist_trackcount
-        #         WHERE  artist_name=%s
-        #           AND  track_count=%s
-        #     ''',
-        #     (
-        #         album.artist,
-        #         album.track_count
-        #     )
-        # )
 
         cursor.execute(
             '''
-                SELECT album.id
-                ,      album.name
-                FROM   album
-                WHERE  album.id IN (
-                    SELECT album_id
-                    FROM   song
-                    WHERE  song.album_id IN (
-                        SELECT album.id
-                        FROM   album
-                        WHERE  album.artist_id IN (
-                            SELECT artist.id
-                            FROM   artist
-                            WHERE  LOWER(artist.name)=%s
-                        )
-                    )
-                    GROUP BY song.album_id
-                    HAVING COUNT(*)=%s
-                )
+                SELECT id
+                ,      album
+                FROM   KLAP3AlbumSummary
+                WHERE  artist=%s
+                  AND  track_count=%s
             ''',
             (
                 album.artist,
                 album.track_count
             )
         )
+
+        # cursor.execute(
+        #     '''
+        #         SELECT album.id
+        #         ,      album.name
+        #         FROM   album
+        #         WHERE  album.id IN (
+        #             SELECT album_id
+        #             FROM   song
+        #             WHERE  song.album_id IN (
+        #                 SELECT album.id
+        #                 FROM   album
+        #                 WHERE  album.artist_id IN (
+        #                     SELECT artist.id
+        #                     FROM   artist
+        #                     WHERE  LOWER(artist.name)=%s
+        #                 )
+        #             )
+        #             GROUP BY song.album_id
+        #             HAVING COUNT(*)=%s
+        #         )
+        #     ''',
+        #     (
+        #         album.artist,
+        #         album.track_count
+        #     )
+        # )
 
         matching_albums = cursor.fetchall()
         cursor.close()
@@ -300,9 +220,7 @@ class KLAP3(object):
         import time
         if album_name_word_match_count(most_closely_matched_album) == 0:
             logger.debug('No sufficient match')
-            time.sleep(10)
             return None
         else:
             logger.debug('Sufficient match!')
-            time.sleep(10)
             return most_closely_matched_album[0]
