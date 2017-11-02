@@ -54,7 +54,7 @@ class KLAP3Album(object):
                                                 artist_number,
                                                 album_letter)
         # self.format = format
-
+        self._format = None
         self.digilib_album = None
         self.match_status = 'None'
 
