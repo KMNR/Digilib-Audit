@@ -15,7 +15,7 @@ class DigilibArtist(object):
 
 class DigilibAlbum(object):
     # Album(_id:int_, title:str, year:int, filesystem_path:str, artist:int)
-    fields = [
+    fieldnames = [
         'library_code',
         'klap3id',
         'digilib_title',
