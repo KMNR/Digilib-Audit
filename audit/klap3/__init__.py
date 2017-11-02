@@ -14,6 +14,38 @@ class KLAP3(object):
     def __init__(self, username, password):
         self.db = MySQLdb.connect("localhost", username, password, "klap3")
 
+    def create_view(self):
+        cursor = self.db.cursor()
+        cursor.execute('DROP TABLE IF EXISTS KLAP3AlbumSummary;')
+        cursor.execute(
+            '''
+                CREATE TABLE KLAP3AlbumSummary 
+                       AS
+                       SELECT Album.id AS id
+                       ,      Album.name AS album
+                       ,      Artist.name AS artist
+                       ,      TrackCount.track_count AS track_count
+                       ,      Genre.abbreviation AS libcode_genre
+                       ,      Artist.lib_number AS libcode_artist
+                       ,      Album.letter AS libcode_album
+                       FROM   album Album
+                       JOIN   artist Artist
+                         ON   Album.artist_id=Artist.id
+                       LEFT JOIN   (
+                                SELECT Song.album_id AS album_id
+                                ,      COUNT(*) AS track_count
+                                FROM   song Song
+                                GROUP  BY Song.album_id
+                              ) TrackCount
+                         ON   TrackCount.album_id=Album.id
+                       JOIN   genre Genre
+                         ON   Artist.genre_id=Genre.id
+                ;
+            '''
+        )
+        self.db.commit()
+        cursor.close()
+
     def albums(self):
         cursor = self.db.cursor()
         cursor.execute('SELECT * FROM album')

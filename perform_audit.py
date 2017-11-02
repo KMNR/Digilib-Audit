@@ -56,6 +56,12 @@ def main(args):
     digilib_db = digilib.load(db_file_path=config.database_filename)
     klap3_db = klap3.load(credentials=config.klap3_credentials)
 
+    # Create a derived table (can't do materialized views in MySQL) that
+    # contains album ID, album name, artist name, album track counts,
+    # and library code (as separate attributes for genre abbreviation,
+    # artist library number and album letter).
+    klap3_db.create_view()
+
     # TODO: do a better solution for the key error that occurs with some albums
     klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
