@@ -1,3 +1,5 @@
+import os
+
 mutagen_compliant_extensions = (
     '.mp3',
     '.flac',
@@ -12,5 +14,6 @@ valid_extensions = (
     '.dts',
     '.wav',
 )
-database_filename = 'music_library.db'
+database_filename = 'digilib.db'
 klap3_credentials = ('klap3', 'kmnr<3buttstuff')
+digilib_directory = '/home/kp/Music/deadmau5'

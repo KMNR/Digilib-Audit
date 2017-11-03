@@ -53,160 +53,178 @@ logger = logging.getLogger(__appname__)
 
 
 def main(args):
+    os.remove(config.database_filename)
+    # Load the digilib database
     digilib_db = digilib.load(db_file_path=config.database_filename)
-    klap3_db = klap3.load(credentials=config.klap3_credentials)
 
-    # Create a derived table (can't do materialized views in MySQL) that
-    # contains album ID, album name, artist name, album track counts,
-    # and library code (as separate attributes for genre abbreviation,
-    # artist library number and album letter).
-    klap3_db.create_view()
+    # Iterate over albums within digilib and add them to the database
+    if not digilib_db.is_populated():
+        digilib_db.init_tables()
+        digilib_db.load_from_filesystem(root=config.digilib_directory)
 
-    # TODO: do a better solution for the key error that occurs with some albums
-    klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
 
-    orphaned_digital_albums = []
-    ghost_digital_albums = [] # extra
-    albums_to_digitize = []
-    matching_albums = []
-
-    # Iterate over each album in digilib
-    unfound_hashmap_albums = []
-    digilib_album_count = digilib_db.album_count()
-    digitlib_spreadsheet_file = open('digilib_reconnect.csv', 'w')
-    digitlib_spreadsheet = csv.DictWriter(
-        digitlib_spreadsheet_file,
-        fieldnames=DigilibAlbum.fieldnames
-    )
-    digitlib_spreadsheet.writeheader()
-    #progress = progressbar.ProgressBar(max_value=digilib_album_count)
-    for i, album in enumerate(digilib_db.albums()):
-        #progress.update(i)
-
-        # Query KLAP3 for that album using the album's name (mysql)
-        found_album_ids = klap3_db.find(album)
-
-        if found_album_ids:
-            # Convert album IDs to matches
-            klap3_album_matches = [
-                klap3_albums_hash[id] for id in found_album_ids
-            ]
-
-            for klap3_album in klap3_album_matches:
-                logger.debug(klap3_album)
-                klap3_album.digilib_album = album
-                matching_albums.append(klap3_album)
-
-                print(' {libcode} │'
-                      ' {album: ^60} │'
-                      ' {artist: ^60} │'
-                      ' {track_count: >2} │'
-                      ' {year} │'
-                      ' {path}'.format(
-                    libcode=termcolor.colored(
-                        '{: ^10}'.format(klap3_album.library_code),
-                        'green'
-                    ),
-                    track_count=album.track_count,
-                    album=album.title,
-                    artist=album.artist,
-                    year=album.year,
-                    path=album.path
-                ))
-
-            if len(found_album_ids)==1:
-                klap3_album_matches[0].match_status = 'Exact'
-                logger.debug(termcolor.colored('Single match!', 'green'))
-
-            elif len(found_album_ids)>1:
-                logger.warning('{} {}'.format(
-                    termcolor.colored(str(len(found_album_ids)),
-                                      'cyan',
-                                      attrs=['underline', 'bold']),
-                    termcolor.colored('KLAP3 matches for {}:'.format(album),
-                                      'cyan')
-                ))
-
-                with open('multiple_album_matches.txt', 'a') as f:
-                    f.write('{}\n'.format(album))
-                    for klap3_album in klap3_album_matches:
-                        klap3_album.match_status = 'Multiple Matches'
-
-                        f.write('{}\n'.format(klap3_album))
-
-                    f.write('\n')
-
-        else:
-            logger.debug(termcolor.colored('No matches: {}'.format(album),
-                                           'red'))
-            print(' {colored_NA} │'
-                  ' {dl_album: ^60} │'
-                  ' {dl_artist: ^60} │'
-                  ' {track_count: >2} │'
-                  ' {dl_year} │'
-                  ' {path}'.format(
-                colored_NA=termcolor.colored(
-                    '{: ^10}'.format('N/A'),
-                    'red'
-                ),
-                track_count=album.track_count,
-                dl_album=album.title,
-                dl_artist=album.artist,
-                dl_year=album.year,
-                path=album.path
-            ))
-            orphaned_digital_albums.append(album)
-
-        if found_album_ids:
-            for klap3_album_id in found_album_ids:
-                klap3_album = klap3_albums_hash[klap3_album_id]
-                album_dict = album.dict()
-                album_dict.update({
-                    'library_code': klap3_album.library_code,
-                    'klap3id': klap3_album.id
-                })
-                digitlib_spreadsheet.writerow(album_dict)
-        else:
-            album_dict = album.dict()
-            album_dict.update({
-                'library_code': '',
-                'klap3id': ''
-            })
-            digitlib_spreadsheet.writerow(album_dict)
-
-        logger.debug('')
-
-    # Build a list of album IDs that are matched
-    # Build a list of album names (with artist names, year, album path) that
-    #  are in the digital library but not in KLAP
-    # Build a list of KLAP3 albums that are not in the digital library
-    # Build a list of digital albums that are in KLAP but not in the digital
-    #  library
-
-    klap3_albums = sorted(klap3_albums_hash.values(),
-                          key=lambda a: a.library_code)
-
-    with open('digitization_task.csv', 'w') as digitization_spreadsheet_file:
-        digitization_spreadsheet = csv.DictWriter(
-            digitization_spreadsheet_file,
-            fieldnames=KLAP3Album.fieldnames
-        )
-        digitization_spreadsheet.writeheader()
-
-        for album in klap3_albums:
-            logger.info(album.colored())
-            digitization_spreadsheet.writerow(album.dict())
-
-    logger.warning('Unable to find {} KLAP3 albums in initial hashmap:'.format(
-        len(unfound_hashmap_albums)
-    ))
-    for album in unfound_hashmap_albums:
-        logger.warning(album)
-
-    # for album in klap3_db.albums_not_in(matching_albums):
-    #     albums_to_digitize.append(album)
+    # if args.no_audit:
+    #     logger.info('Digilib database initialization complete.'
+    #                 ' No audit will be performed.'
+    #                 ' Database stored at {}'.format(
+    #         os.path.abspath(config.database_filename)
+    #     ))
+    #     return
     #
-    # albums_to_digitize.sort(key=lambda a: a.library_code)
+    # # Load the klap3 database
+    # klap3_db = klap3.load(credentials=config.klap3_credentials)
+    #
+    # # Create a derived table (can't do materialized views in MySQL) that
+    # # contains album ID, album name, artist name, album track counts,
+    # # and library code (as separate attributes for genre abbreviation,
+    # # artist library number and album letter).
+    # klap3_db.create_view()
+    #
+    # # TODO: do a better solution for the key error that occurs with some albums
+    # klap3_albums_hash = {a.id: a for a in klap3_db.albums()}
+    #
+    # orphaned_digital_albums = []
+    # ghost_digital_albums = [] # extra
+    # albums_to_digitize = []
+    # matching_albums = []
+    #
+    # # Iterate over each album in digilib
+    # unfound_hashmap_albums = []
+    # digilib_album_count = digilib_db.album_count()
+    # digitlib_spreadsheet_file = open('digilib_reconnect.csv', 'w')
+    # digitlib_spreadsheet = csv.DictWriter(
+    #     digitlib_spreadsheet_file,
+    #     fieldnames=DigilibAlbum.fieldnames
+    # )
+    # digitlib_spreadsheet.writeheader()
+    # #progress = progressbar.ProgressBar(max_value=digilib_album_count)
+    # for i, album in enumerate(digilib_db.albums()):
+    #     #progress.update(i)
+    #
+    #     # Query KLAP3 for that album using the album's name (mysql)
+    #     found_album_ids = klap3_db.find(album)
+    #
+    #     if found_album_ids:
+    #         # Convert album IDs to matches
+    #         klap3_album_matches = [
+    #             klap3_albums_hash[id] for id in found_album_ids
+    #         ]
+    #
+    #         for klap3_album in klap3_album_matches:
+    #             logger.debug(klap3_album)
+    #             klap3_album.digilib_album = album
+    #             matching_albums.append(klap3_album)
+    #
+    #             print(' {libcode} │'
+    #                   ' {album: ^60} │'
+    #                   ' {artist: ^60} │'
+    #                   ' {track_count: >2} │'
+    #                   ' {year} │'
+    #                   ' {path}'.format(
+    #                 libcode=termcolor.colored(
+    #                     '{: ^10}'.format(klap3_album.library_code),
+    #                     'green'
+    #                 ),
+    #                 track_count=album.track_count,
+    #                 album=album.title,
+    #                 artist=album.artist,
+    #                 year=album.year,
+    #                 path=album.path
+    #             ))
+    #
+    #         if len(found_album_ids)==1:
+    #             klap3_album_matches[0].match_status = 'Exact'
+    #             logger.debug(termcolor.colored('Single match!', 'green'))
+    #
+    #         elif len(found_album_ids)>1:
+    #             logger.warning('{} {}'.format(
+    #                 termcolor.colored(str(len(found_album_ids)),
+    #                                   'cyan',
+    #                                   attrs=['underline', 'bold']),
+    #                 termcolor.colored('KLAP3 matches for {}:'.format(album),
+    #                                   'cyan')
+    #             ))
+    #
+    #             with open('multiple_album_matches.txt', 'a') as f:
+    #                 f.write('{}\n'.format(album))
+    #                 for klap3_album in klap3_album_matches:
+    #                     klap3_album.match_status = 'Multiple Matches'
+    #
+    #                     f.write('{}\n'.format(klap3_album))
+    #
+    #                 f.write('\n')
+    #
+    #     else:
+    #         logger.debug(termcolor.colored('No matches: {}'.format(album),
+    #                                        'red'))
+    #         print(' {colored_NA} │'
+    #               ' {dl_album: ^60} │'
+    #               ' {dl_artist: ^60} │'
+    #               ' {track_count: >2} │'
+    #               ' {dl_year} │'
+    #               ' {path}'.format(
+    #             colored_NA=termcolor.colored(
+    #                 '{: ^10}'.format('N/A'),
+    #                 'red'
+    #             ),
+    #             track_count=album.track_count,
+    #             dl_album=album.title,
+    #             dl_artist=album.artist,
+    #             dl_year=album.year,
+    #             path=album.path
+    #         ))
+    #         orphaned_digital_albums.append(album)
+    #
+    #     if found_album_ids:
+    #         for klap3_album_id in found_album_ids:
+    #             klap3_album = klap3_albums_hash[klap3_album_id]
+    #             album_dict = album.dict()
+    #             album_dict.update({
+    #                 'library_code': klap3_album.library_code,
+    #                 'klap3id': klap3_album.id
+    #             })
+    #             digitlib_spreadsheet.writerow(album_dict)
+    #     else:
+    #         album_dict = album.dict()
+    #         album_dict.update({
+    #             'library_code': '',
+    #             'klap3id': ''
+    #         })
+    #         digitlib_spreadsheet.writerow(album_dict)
+    #
+    #     logger.debug('')
+    #
+    # # Build a list of album IDs that are matched
+    # # Build a list of album names (with artist names, year, album path) that
+    # #  are in the digital library but not in KLAP
+    # # Build a list of KLAP3 albums that are not in the digital library
+    # # Build a list of digital albums that are in KLAP but not in the digital
+    # #  library
+    #
+    # klap3_albums = sorted(klap3_albums_hash.values(),
+    #                       key=lambda a: a.library_code)
+    #
+    # with open('digitization_task.csv', 'w') as digitization_spreadsheet_file:
+    #     digitization_spreadsheet = csv.DictWriter(
+    #         digitization_spreadsheet_file,
+    #         fieldnames=KLAP3Album.fieldnames
+    #     )
+    #     digitization_spreadsheet.writeheader()
+    #
+    #     for album in klap3_albums:
+    #         logger.info(album.colored())
+    #         digitization_spreadsheet.writerow(album.dict())
+    #
+    # logger.warning('Unable to find {} KLAP3 albums in initial hashmap:'.format(
+    #     len(unfound_hashmap_albums)
+    # ))
+    # for album in unfound_hashmap_albums:
+    #     logger.warning(album)
+    #
+    # # for album in klap3_db.albums_not_in(matching_albums):
+    # #     albums_to_digitize.append(album)
+    # #
+    # # albums_to_digitize.sort(key=lambda a: a.library_code)
 
 
 
@@ -240,6 +258,11 @@ def get_arguments():
     parser = argparse.ArgumentParser(
         description="Description printed to command-line if -h is called."
     )
+    parser.add_argument('-i', '--init-digilib-from-fs', dest='no_audit',
+                        default=False,
+                        help='Walk through file system and initialize '
+                             'digilib database. Do not perform audit.')
+
     # during development, I set default to False so I don't have to keep
     # calling this with -v
     parser.add_argument('-v', '--verbose', action='store_true',

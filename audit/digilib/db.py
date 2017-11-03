@@ -1,6 +1,261 @@
 import os
 import sqlite3
 import datetime
+import logging
+
+from unidecode import unidecode
+
+logger = logging.getLogger(__name__)
+from audit.digilib import models, filesystem
+
+
+class DigilibDatabase(object):
+    def __init__(self, db_file_path):
+        self.path = db_file_path
+        self.connection = sqlite3.connect(db_file_path)
+
+    def is_populated(self):
+        '''Test whether tables exist in the database'''
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute('SELECT * FROM Artist LIMIT 1')
+        except sqlite3.OperationalError:
+            return False
+
+        return True
+
+    def init_tables(self):
+        '''Initialize digilib database tables'''
+        logger.debug('Initializing empty tables')
+
+        cursor = self.connection.cursor()
+
+        # Create Artist table
+        cursor.execute(
+            '''
+                CREATE TABLE Artist (
+                    id INTEGER PRIMARY KEY
+                ,   metadata_name VARCHAR(120)
+                ,   dir_name VARCHAR(120)
+                )
+            '''
+        )
+
+        # Force the database to create the previously created table
+        self.connection.commit()
+
+        # Create Album table
+        cursor.execute(
+            '''
+                CREATE TABLE Album (
+                    id INTEGER PRIMARY KEY
+                ,   metadata_title VARCHAR(120)
+                ,   metadata_year INTEGER
+                ,   dir_title VARCHAR(120) NOT NULL
+                ,   dir_year INTEGER
+                ,   filesystem_path VARCHAR(500) UNIQUE
+                ,   artist INTEGER NOT NULL
+                ,   FOREIGN KEY(artist) REFERENCES Artist(id)
+                )
+            '''
+        )
+        self.connection.commit()
+
+        # Create the Song table
+        cursor.execute(
+            '''
+                CREATE TABLE Song (
+                    id INTEGER PRIMARY KEY
+                ,   meta_title VARCHAR(120)
+                ,   meta_track_number INTEGER
+                ,   filename_title VARCHAR(120) NOT NULL
+                ,   filename_track_number INTEGER
+                ,   duration INTEGER
+                ,   filesystem_path VARCHAR(500) NOT NULL UNIQUE
+                ,   album INTEGER NOT NULL
+                ,   artist INTEGER NOT NULL
+                ,   FOREIGN KEY(album) REFERENCES Album(id)
+                ,   FOREIGN KEY(artist) REFERENCES Artist(id)
+                )
+            '''
+        )
+        self.connection.commit()
+
+        # Close the cursor before exiting.
+        cursor.close()
+
+    def load_from_filesystem(self, root):
+        cursor = self.connection.cursor()
+
+        # Iterate through found albums in the file system
+        for album in filesystem.gather_albums_within(root_directory=root):
+            logger.debug('Adding album {} with {} tracks'.format(
+                album, len(album)
+            ))
+
+            # Attempt to search for a pre-existing artist of the given album
+            # by name
+            artist_id = self.find_artist_by_name(artist=album.artist,
+                                                 cursor=cursor)
+
+            # If the artist doesn't exist, then create one
+            if artist_id is None:
+                cursor.execute(
+                    '''
+                        INSERT INTO Artist 
+                        VALUES      (
+                                        NULL
+                                    ,   :meta_name
+                                    , :fs_name
+                                    )
+                    ''',
+                    album.artist.attrs
+                )
+                artist_id = cursor.lastrowid
+
+            # Add album to the database
+            album.artist_id = artist_id
+            cursor.execute(
+                '''
+                    INSERT INTO Album 
+                    VALUES      (
+                                    NULL
+                                ,   :meta_title
+                                ,   :meta_year
+                                ,   :fs_title
+                                ,   :fs_year
+                                ,   :path
+                                ,   :artist_id
+                                )
+                ''',
+                album.attrs
+            )
+
+            # Apply the album ID to every song
+            album.set_id(cursor.lastrowid)
+
+            # Find the artist for every song. If an artist doesn't exist,
+            # create it.
+            for song in album:
+                artist_id = self.find_artist_by_name(artist=song.artist,
+                                                     cursor=cursor)
+                if artist_id is None:
+                    cursor.execute(
+                        '''
+                            INSERT INTO Artist
+                            VALUES      (
+                                            NULL
+                                        ,   :meta_name
+                                        ,   :fs_name
+                                        )
+                        ''',
+                        album.artist.attrs
+                    )
+                    artist_id = cursor.lastrowid
+                song.artist_id = artist_id
+
+            # Add songs to the database
+            cursor.executemany(
+                '''
+                    INSERT INTO Song 
+                    VALUES      (
+                                    NULL
+                                ,   :meta_title
+                                ,   :meta_track_number
+                                ,   :fs_title
+                                ,   :fs_track_number
+                                ,   :duration
+                                ,   :path
+                                ,   :album_id
+                                ,   :artist_id
+                                )
+                ''',
+                album.tracks_tuples
+            )
+            self.connection.commit()
+
+        cursor.close()
+
+        logger.debug('File system walking completed')
+
+    def find_artist_by_name(self, artist, cursor):
+        logger.debug(artist)
+        cursor.execute(
+            'SELECT id '
+            '  FROM Artist '
+            ' WHERE LOWER(metadata_name)=:meta_name',
+            {
+                'meta_name': unidecode(str(artist)).lower(),
+            }
+        )
+        result = cursor.fetchone()
+        if result is None:
+            return None
+        else:
+            return result[0]
+        return artist_id
+
+    def albums(self):
+        cursor = self.connection.cursor()
+        '''
+        Artist(_id:int_, name:str)
+        Album(_id:int_, title:str, year:int, filesystem_path:str, artist:int)
+        Song(_id:int_, title:str, duration:int, track_number:int, album:int, filesystem_path:int, artist:int)
+        '''
+
+        cursor.execute('SELECT * FROM Album')
+        for t in cursor:
+            yield models.DigilibAlbum(self, *t)
+
+        cursor.close()
+
+    def album_count(self):
+        cursor = self.connection.cursor()
+
+        cursor.execute('SELECT COUNT(*) FROM Album')
+        count, = cursor.fetchone()
+
+        cursor.close()
+
+        return count
+
+    def artist_of(self, album_id):
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            '''
+                SELECT * 
+                FROM   Artist
+                WHERE  Artist.id=(
+                       SELECT Album.artist
+                       FROM   Album
+                       WHERE  Album.id=:album_id
+                )
+            ''',
+            {'album_id': album_id}
+        )
+        t = cursor.fetchone()
+
+        cursor.close()
+
+        return models.DigilibArtist(self, *t)
+
+    def tracks_of(self, album_id):
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            '''
+                SELECT * 
+                FROM   Song
+                WHERE  album=:album_id
+            ''',
+            {'album_id': album_id}
+        )
+        T = cursor.fetchall()
+        logger.debug('{} tracks found for album {}'.format(len(T), album_id))
+        cursor.close()
+
+        return [models.DigilibSong(self, *t) for t in T]
 
 
 class BaseDatabaseManager(object):
@@ -175,58 +430,6 @@ class DatabaseAPI(BaseDatabaseManager):
 class DatabaseLoader(BaseDatabaseManager):
     def __init__(self, db_file_path):
         super(DatabaseLoader, self).__init__(db_file_path=db_file_path)
-
-    def initialize_empty_tables(self):
-        print('Initializing empty tables: ', end='')
-
-        cursor = self.connection.cursor()
-
-        # Create Artist table
-        print('Artist', end='')
-        cursor.execute(
-            'CREATE TABLE Artist ('
-            '    id INTEGER PRIMARY KEY,'
-            '    name VARCHAR(120)'
-            ')'
-        )
-
-        # Force the database to create the previously created table
-        self.connection.commit()
-
-        # Create Album table
-        print(', Album', end='')
-        cursor.execute(
-            'CREATE TABLE Album ('
-            '    id INTEGER PRIMARY KEY,'
-            '    title VARCHAR(120) NOT NULL,'
-            '    year INTEGER,'     # The year attribute is allowed to be null.
-            '    filesystem_path VARCHAR(500) UNIQUE,'
-            '    artist INTEGER NOT NULL,'
-            '    FOREIGN KEY(artist) REFERENCES Artist(id)'
-            ')'
-        )
-        self.connection.commit()
-
-        print(', Song', end='')
-        # Create the Song table
-        cursor.execute(
-            'CREATE TABLE Song ('
-            '    id INTEGER PRIMARY KEY,'
-            '    title VARCHAR(120) NOT NULL,'
-            '    duration INTEGER,'
-            '    track_number INTEGER,'
-            '    album INTEGER,'
-            '    filesystem_path VARCHAR(500) NOT NULL UNIQUE,'
-            '    artist INTEGER,'
-            '    FOREIGN KEY(album) REFERENCES Album(id),'
-            '    FOREIGN KEY(artist) REFERENCES Artist(id)'
-            ')'
-        )
-        self.connection.commit()
-
-        # Close the cursor before exiting.
-        print('... empty table created at {}!'.format(self.path))
-        cursor.close()
 
     def insert_song(self, song):
         print('Inserting new song: {}'.format(song))
