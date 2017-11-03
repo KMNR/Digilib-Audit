@@ -1,0 +1,34 @@
+<html lang="en">
+<head>
+    <title>Digital Music Library</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='layout.css') }}">
+</head>
+
+<body>
+
+<header>
+    <h1>The KMNR Digital Music Library</h1>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('album_page') }}">Albums</a></li>
+        <li><a href="{{ url_for('artist_page') }}">Artists</a></li>
+        <li><a href="{{ url_for('song_page') }}">Songs</a></li>
+    </ul>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer>
+    <p>Derived from the template by
+        <a href="https://codepen.io/nronline/pen/dXwBxj">NROnline</a>.
+        Extended by Doug McGeehan.
+    </p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<section>
+    {% if artists is none or artists|length == 0 %}
+        <h2>No Artists Found</h2>
+    {% else %}
+
+        <h2>Artists{% if artist_query %} matching "{{artist_query}}"
+                   {% endif%}</h2>
+        {% for single_artist in artists %}
+            <article>
+                <h3><a href="{{ url_for('artist_page',
+                                        artist_id=single_artist.id) }}">
+                    {{single_artist.name}}</a>
+                </h3>
+                {% set albums_by_artist = albums_per_artist[single_artist.id] %}
+                <ul>
+                {% for album in albums_by_artist %}
+                    <li><a href="{{ url_for('album_page',
+                                            album_id=album.id) }}">
+                            {{ album.title }}</a>
+                        ({{ album.year}})</li>
+                {% endfor %}
+                </ul>
+            </article>
+        {% endfor %}
+    {% endif %}
+
+</section>
+{% endblock %}

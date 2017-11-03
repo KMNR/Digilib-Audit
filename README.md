@@ -3,3 +3,5 @@ The digilib might have (a) orphaned files not present in KLAP, (b) missing files
 
 Required:
   Mutagen - pip install mutagen
+  apt-get install libmariadbclient-dev
+

@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block content %}
+<section>
+    <h2>Albums</h2>
+    {% for single_album in albums %}
+    <article>
+        <h3>{{ single_album.title }}</h3>
+        <h4>by
+            <a href="{{ url_for('artist_page',
+                                artist_id=single_album.artist) }}">
+                {{ artist_names[single_album.artist] }}</a>
+            ({{ single_album.year }})
+        </h4>
+
+        <ol>
+            {% set songs_from_album = songs_by_album[single_album.id] %}
+            {% set song_durations = [] %}
+            {% for track in songs_from_album %}
+                <li>
+                    {{ track.title }} ({{ track.duration|duration }})
+                </li>
+                {# The following is an ugly hack to accomplish the updating of a
+                   variable inside of a jinja2 loop. See here:
+                   https://stackoverflow.com/a/22233462/412495 #}
+                {% if song_durations.append(track.duration) %}{% endif %}
+            {% endfor %}
+        </ol>
+
+        {{ index }}
+        <p>Album duration: {{ song_durations | sum | duration }}</p>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}
