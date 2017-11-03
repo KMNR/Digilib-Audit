@@ -73,7 +73,7 @@ def main(args):
     # Iterate over each album in digilib
     unfound_hashmap_albums = []
     digilib_album_count = digilib_db.album_count()
-    digitlib_spreadsheet_file = open('digitization_task.csv', 'w')
+    digitlib_spreadsheet_file = open('digilib_reconnect.csv', 'w')
     digitlib_spreadsheet = csv.DictWriter(
         digitlib_spreadsheet_file,
         fieldnames=DigilibAlbum.fieldnames
