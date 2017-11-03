@@ -88,12 +88,10 @@ class KLAP3(object):
             """
                 SELECT id
                 FROM   KLAP3AlbumSummary A
-                WHERE  A.track_count=%s
-                   AND LOWER(A.album)=%s
+                WHERE  LOWER(A.album)=%s
                    AND LOWER(A.artist)=%s
             """,
             (
-                album.track_count,
                 unidecode(album.title).lower(),
                 unidecode(album.artist).lower(),
             )
@@ -104,15 +102,95 @@ class KLAP3(object):
 
         logger.debug('{} KLAP3 albums found'.format(len(matching_album_ids)))
 
-        if len(matching_album_ids) == 0:
+        if not matching_album_ids:
             closest_matched_album_id = self.find_by_artist_and_track_count(album)
-            if closest_matched_album_id is None:
-                matching_album_ids = []
-            else:
+            if closest_matched_album_id is not None:
                 matching_album_ids = [closest_matched_album_id]
+
+        if not matching_album_ids:
+            matching_album_name_and_track_count_id = self.find_by_matching_album_and_id(album)
+            if matching_album_name_and_track_count_id is not None:
+                matching_album_ids = [matching_album_name_and_track_count_id]
 
         logger.debug('')
         return matching_album_ids
+
+    def find_by_matching_album_and_id(self, album):
+        logger.debug('Finding albums by {} with {} songs'.format(
+            album.title, album.track_count
+        ))
+
+        cursor = self.db.cursor()
+
+        # Grab the names and ids of albums performed by an artist
+        #  with a given number of songs.
+
+        cursor.execute(
+            '''
+                SELECT id
+                ,      artist
+                FROM   KLAP3AlbumSummary
+                WHERE  LOWER(album)=%s
+                  AND  track_count=%s
+            ''',
+            (
+                unidecode(album.title).lower(),
+                album.track_count
+            )
+        )
+
+        matching_albums = cursor.fetchall()
+        cursor.close()
+
+        logger.debug('{} albums found'.format(len(matching_albums)))
+        if 0==len(matching_albums):
+            return None
+
+        # Isolate the album that has the most matching words as that of
+        #  the given album.
+
+        strip_away_non_alphanums = lambda x: ''.join(c for c in x if
+                                                     c.isalnum())
+        strip_away_from_all_words = lambda x: [
+            strip_away_non_alphanums(w)
+            for w in x
+            if strip_away_non_alphanums(w)
+        ]
+        set_of_proper_lowercase_words = lambda s: set(
+            strip_away_from_all_words(unidecode(s).lower().split(' '))
+        )
+
+        words_of_given_artist_name = set_of_proper_lowercase_words(album.artist)
+
+        logger.debug('Words in given artist name: {}'.format(
+            words_of_given_artist_name))
+        logger.debug('Found artist name words:')
+        for album_id, album_artist in matching_albums:
+            logger.debug(set_of_proper_lowercase_words(album_artist))
+        logger.debug('-'*80)
+
+        artist_name_word_match_count = lambda album: len(
+            words_of_given_artist_name.intersection(
+                set_of_proper_lowercase_words(album[1])
+            )
+        )
+
+        most_closely_matched_album = max(
+            matching_albums,
+            key=artist_name_word_match_count,
+        )
+        logger.debug('Album with closest match: {}'.format(
+            most_closely_matched_album[1]))
+        logger.debug('Compared to search album: {}'.format(
+            album.title
+        ))
+
+        if artist_name_word_match_count(most_closely_matched_album) == 0:
+            logger.debug('No sufficient match')
+            return None
+        else:
+            logger.debug('Sufficient match!')
+            return most_closely_matched_album[0]
 
     def find_by_artist_and_track_count(self, album):
         logger.debug('Finding albums by {} with {} songs'.format(
@@ -129,41 +207,14 @@ class KLAP3(object):
                 SELECT id
                 ,      album
                 FROM   KLAP3AlbumSummary
-                WHERE  artist=%s
+                WHERE  LOWER(artist)=%s
                   AND  track_count=%s
             ''',
             (
-                album.artist,
+                unidecode(album.artist).lower(),
                 album.track_count
             )
         )
-
-        # cursor.execute(
-        #     '''
-        #         SELECT album.id
-        #         ,      album.name
-        #         FROM   album
-        #         WHERE  album.id IN (
-        #             SELECT album_id
-        #             FROM   song
-        #             WHERE  song.album_id IN (
-        #                 SELECT album.id
-        #                 FROM   album
-        #                 WHERE  album.artist_id IN (
-        #                     SELECT artist.id
-        #                     FROM   artist
-        #                     WHERE  LOWER(artist.name)=%s
-        #                 )
-        #             )
-        #             GROUP BY song.album_id
-        #             HAVING COUNT(*)=%s
-        #         )
-        #     ''',
-        #     (
-        #         album.artist,
-        #         album.track_count
-        #     )
-        # )
 
         matching_albums = cursor.fetchall()
         cursor.close()
